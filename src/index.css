@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+
+  /* Azul mariano, oro y crema: los colores de la app. */
+  --color-crema: #faf8f3;
+  --color-cielo-50: #f2f6fc;
+  --color-cielo-100: #e1eaf8;
+  --color-cielo-200: #c3d5f1;
+  --color-cielo-500: #3b64b3;
+  --color-cielo-600: #2c4f99;
+  --color-cielo-700: #233f7d;
+  --color-cielo-800: #1d3466;
+  --color-cielo-900: #172a52;
+  --color-oro-400: #d9b44a;
+  --color-oro-500: #c49a2c;
+  --color-oro-600: #9f7c1f;
+}
+
+body {
+  @apply bg-crema font-sans text-stone-800 antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
