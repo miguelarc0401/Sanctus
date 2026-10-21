@@ -25,4 +25,4 @@ Otros comandos: `npm run build` (compila), `npm run lint` (revisa el código) y 
 
 - Comando de compilación: `npm run build`
 - Carpeta de salida: `dist`
-- Variables de entorno: `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`
+- No hace falta configurar variables: la URL y la clave *publishable* de Supabase están en `.env.production`.
