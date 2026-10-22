@@ -5,6 +5,7 @@ import { Cargando, EncabezadoAdmin, EtiquetaTipo, Vacio } from '../components/Bl
 import { AreaTexto, Campo, Casilla, MensajeError, PieFormulario, Selector } from '../components/Formulario'
 import { Hoja } from '../components/Hoja'
 import { borrarFila, datos, guardarFila } from '../lib/consultas'
+import { terminoAntesDe } from '../lib/contenido'
 import { aValorDeCampo, deValorDeCampo, diaLargo, hora, inicioDeHoy } from '../lib/fechas'
 import { supabase } from '../lib/supabase'
 import { TIPOS_EVENTO, type Evento, type TipoEvento } from '../lib/tipos'
@@ -147,8 +148,8 @@ export function EventosAdmin() {
     queryFn: () => datos<Evento[]>(supabase.from('eventos').select('*').order('inicio').limit(300)),
   })
   const hoy = inicioDeHoy()
-  const proximos = eventos.filter((e) => (e.fin ?? e.inicio) >= hoy)
-  const pasados = eventos.filter((e) => (e.fin ?? e.inicio) < hoy).reverse()
+  const proximos = eventos.filter((e) => !terminoAntesDe(e, hoy))
+  const pasados = eventos.filter((e) => terminoAntesDe(e, hoy)).reverse()
 
   return (
     <div className="space-y-5">

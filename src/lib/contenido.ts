@@ -43,6 +43,11 @@ export function useAvisos(grupoId: number | null, limite = 50) {
 
 const DIA = 24 * 60 * 60 * 1000
 
+// Se comparan como fechas: Supabase devuelve «…+00:00» y toISOString «….000Z», y como texto no coinciden.
+export function terminoAntesDe(evento: Evento, iso: string) {
+  return Date.parse(evento.fin ?? evento.inicio) < Date.parse(iso)
+}
+
 // Eventos que aún no terminan (incluye un campamento que empezó hace unos días).
 export function useProximosEventos(grupoId: number | null, limite = 100) {
   return useQuery({
@@ -53,7 +58,7 @@ export function useProximosEventos(grupoId: number | null, limite = 100) {
       const filas = await datos<Evento[]>(
         supabase.from('eventos').select('*').or(filtroGrupo(grupoId)).gte('inicio', hace31Dias).order('inicio'),
       )
-      return filas.filter((e) => (e.fin ?? e.inicio) >= hoy).slice(0, limite)
+      return filas.filter((e) => !terminoAntesDe(e, hoy)).slice(0, limite)
     },
   })
 }
@@ -62,15 +67,19 @@ export function useEventosPasados(grupoId: number | null, activo: boolean) {
   return useQuery({
     queryKey: ['eventos', 'pasados', grupoId],
     enabled: activo,
-    queryFn: () =>
-      datos<Evento[]>(
+    queryFn: async () => {
+      const hoy = inicioDeHoy()
+      const filas = await datos<Evento[]>(
         supabase
           .from('eventos')
           .select('*')
           .or(filtroGrupo(grupoId))
-          .lt('inicio', inicioDeHoy())
+          .lt('inicio', hoy)
           .order('inicio', { ascending: false })
           .limit(30),
-      ),
+      )
+      // Un campamento que empezó ayer y sigue en curso va en «Próximos», no aquí.
+      return filas.filter((e) => terminoAntesDe(e, hoy))
+    },
   })
 }

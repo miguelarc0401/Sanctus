@@ -7,7 +7,7 @@ const mismoDia = (a: string, b: string) => aFechaISO(new Date(a)) === aFechaISO(
 
 function horario(evento: Evento) {
   const { inicio, fin, todo_el_dia } = evento
-  if (todo_el_dia) return fin && !mismoDia(inicio, fin) ? `Hasta el ${diaLargo(fin)}` : 'Todo el día'
+  if (todo_el_dia) return fin && !mismoDia(inicio, fin) ? `Todo el día, hasta el ${diaLargo(fin)}` : 'Todo el día'
   if (!fin) return hora(inicio)
   return mismoDia(inicio, fin) ? `${hora(inicio)} – ${hora(fin)}` : `${hora(inicio)} – ${diaLargo(fin)}, ${hora(fin)}`
 }
