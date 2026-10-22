@@ -14,6 +14,8 @@ Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos,
 | Alta de miembros | La hace el administrador. No hay registro público. |
 | Administradores | Uno solo. |
 | Formato de los libros | Mayormente PDF; también Word o sólo imágenes. |
+| Santos | Catálogo editable por el administrador (empezó con 24 santos). Al crear un grupo se elige su santo. |
+| Cuentas de niños | A nombre de los niños, sin importar la edad. Entran con un usuario (no necesitan correo). |
 
 ## 3. Supuestos (se pueden cambiar)
 

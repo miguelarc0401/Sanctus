@@ -164,7 +164,7 @@ grant select, insert, update, delete
   on public.santos, public.grupos, public.miembros, public.avisos, public.eventos, public.virtudes
   to authenticated;
 grant all
-  on public.santos, public.grupos, public.miembros, public.avisos, public.eventos, public.virtudes
+  on public.perfiles, public.santos, public.grupos, public.miembros, public.avisos, public.eventos, public.virtudes
   to service_role;
 
 -- Lectura
