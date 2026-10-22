@@ -2,6 +2,8 @@
 
 App web instalable (PWA) para los grupos de la parroquia: avisos, calendario, biblioteca de reflexión, votación de temas, temario de charlas, preguntas al coordinador y la virtud de la semana. El plan completo está en [PLAN.md](PLAN.md).
 
+App publicada: https://sanctus.miguelarc-0401.workers.dev
+
 ## Tecnología
 
 - React + TypeScript + Vite, Tailwind CSS y `vite-plugin-pwa`.

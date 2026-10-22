@@ -31,7 +31,7 @@ Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos,
 ```
 Celular / PC (app instalada desde el navegador)
    │
-   ├── Cloudflare Pages ... sirve la app (gratis, se publica sola con cada cambio)
+   ├── Cloudflare ......... sirve la app (gratis, se publica sola con cada cambio)
    │
    └── Supabase ........... inicio de sesión, base de datos, archivos de libros, funciones
 ```
@@ -42,7 +42,7 @@ Celular / PC (app instalada desde el navegador)
   - **Postgres con RLS:** las reglas de quién ve qué viven en la base de datos, no sólo en la pantalla.
   - **Storage:** bucket privado para los libros; se accede con enlaces firmados que caducan en minutos.
   - **Edge Functions:** alta de usuarios (usa la clave de servicio, que nunca va al navegador) y, más adelante, notificaciones.
-- **Código** en GitHub; Cloudflare Pages publica automáticamente cada cambio.
+- **Código** en GitHub ([miguelarc0401/Sanctus](https://github.com/miguelarc0401/Sanctus)); Cloudflare (Worker `sanctus`) publica automáticamente cada cambio en `https://sanctus.miguelarc-0401.workers.dev`.
 - **Por qué no Netlify:** su plan gratis da 300 créditos al mes y cada publicación gasta 15, así que se acaba con unas 20 publicaciones. Como la app son sólo archivos estáticos y todo lo demás vive en Supabase, cambiar de servicio más adelante es sencillo.
 
 ### Alta de miembros
@@ -122,7 +122,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 
 | Fase | Contenido |
 |---|---|
-| 0. Base | Cuentas, proyecto, inicio de sesión, app instalable, identidad visual «Santa María». |
+| 0. Base ✅ | Cuentas, proyecto, inicio de sesión, app instalable, identidad visual «Santa María». |
 | 1. Lo esencial | Grupos, alta de miembros, inicio con la virtud de la semana, avisos, calendario. |
 | 2. Participación | Preguntas privadas, encuestas de temas, temario de charlas. |
 | 3. Biblioteca | Subida de libros, lector protegido, anotaciones privadas. |
@@ -132,13 +132,14 @@ Las notificaciones push en iPhone sólo funcionan si la app está instalada en l
 
 ## 10. Costos
 
-- **Cloudflare Pages:** gratis y sin créditos: hasta 500 publicaciones al mes y el tráfico de la app no se cobra.
+- **Cloudflare Workers:** gratis y sin créditos; las visitas a la app (archivos estáticos) no se cobran.
 - **Supabase (plan gratis):** 500 MB de base de datos, 1 GB de archivos y hasta 50 000 usuarios activos al mes. Un proyecto gratis se pausa si pasa una semana sin uso; con uso semanal no debería ocurrir, y si ocurre se reactiva desde el panel. El plan Pro cuesta 25 USD al mes, por si algún día hace falta.
-- **Dominio propio (opcional):** unos 10–15 USD al año. Sin él, la dirección sería del tipo `santa-maria.pages.dev`, si está libre.
+- **Dominio propio (opcional):** unos 10–15 USD al año. Sin él, la dirección es `sanctus.miguelarc-0401.workers.dev`.
 
 ## 11. Pendiente del administrador
 
-- Crear las cuentas de GitHub, Supabase y Cloudflare (a Supabase se puede entrar con la cuenta de GitHub).
+- ~~Crear las cuentas de GitHub, Supabase y Cloudflare.~~ Hecho.
+- En Supabase, **Authentication → URL Configuration → Site URL**: poner `https://sanctus.miguelarc-0401.workers.dev` (hace falta para los correos de «olvidé mi contraseña»).
 - Logo o imagen y colores preferidos (opcional).
 - Lista inicial de grupos y el santo de cada uno.
 - Grupo de niños: decidir si las cuentas van a nombre de los padres (recomendado con menores).
