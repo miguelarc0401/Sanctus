@@ -29,5 +29,8 @@ dist-ssr
 !.env.example
 !.env.production
 
+# Caché local de Cloudflare
+.wrangler/
+
 # Configuración local de Claude
 .claude/

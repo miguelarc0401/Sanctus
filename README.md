@@ -6,7 +6,7 @@ App web instalable (PWA) para los grupos de la parroquia: avisos, calendario, bi
 
 - React + TypeScript + Vite, Tailwind CSS y `vite-plugin-pwa`.
 - Supabase para inicio de sesión, base de datos y archivos.
-- Cloudflare Pages para publicar la app.
+- Cloudflare Workers (archivos estáticos) para publicar la app.
 
 ## Desarrollo
 
@@ -21,8 +21,10 @@ npm run dev
 
 Otros comandos: `npm run build` (compila), `npm run lint` (revisa el código) y `npm run iconos` (regenera los íconos a partir de `public/logo.svg`).
 
-## Publicación en Cloudflare Pages
+## Publicación en Cloudflare
+
+El Worker `sanctus` está conectado a este repositorio: cada cambio en `main` se publica solo.
 
 - Comando de compilación: `npm run build`
-- Carpeta de salida: `dist`
+- Comando de publicación: `npx wrangler deploy` (usa `wrangler.jsonc`)
 - No hace falta configurar variables: la URL y la clave *publishable* de Supabase están en `.env.production`.
