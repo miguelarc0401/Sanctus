@@ -1,9 +1,11 @@
 import type { Session } from '@supabase/supabase-js'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { AuthContext, type Perfil } from './contexto'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const clienteConsultas = useQueryClient()
   const [sesion, setSesion] = useState<Session | null>(null)
   const [sesionLista, setSesionLista] = useState(false)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
@@ -28,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!usuarioId) return
     const { data, error } = await supabase
       .from('perfiles')
-      .select('id, nombre, foto, es_admin, debe_cambiar_contrasena')
+      .select('id, nombre, foto, acceso, es_admin, debe_cambiar_contrasena')
       .eq('id', usuarioId)
       .maybeSingle()
     if (error) console.error('No se pudo cargar el perfil', error)
@@ -44,7 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setPerfil(null)
     setPerfilDe(null)
-  }, [])
+    // Que la siguiente persona que entre en este teléfono no vea datos de la anterior.
+    clienteConsultas.clear()
+  }, [clienteConsultas])
 
   const cargando = !sesionLista || (usuarioId !== undefined && perfilDe !== usuarioId)
 

@@ -1,8 +1,18 @@
-import { BookOpen, CalendarDays, Shield, Vote } from 'lucide-react'
+import { BookOpen, Vote } from 'lucide-react'
 import { Navigate, Route, Routes } from 'react-router'
+import { AvisosAdmin } from './admin/AvisosAdmin'
+import { EventosAdmin } from './admin/EventosAdmin'
+import { Grupos } from './admin/Grupos'
+import { Miembros } from './admin/Miembros'
+import { Panel } from './admin/Panel'
+import { Santos } from './admin/Santos'
+import { VirtudesAdmin } from './admin/VirtudesAdmin'
 import { RutaAdmin, RutaPrivada } from './auth/rutas'
 import { Layout } from './components/Layout'
 import { Proximamente } from './components/Proximamente'
+import { GruposProvider } from './grupos/GruposProvider'
+import { Avisos } from './pages/Avisos'
+import { Calendario } from './pages/Calendario'
 import { CambiarContrasena } from './pages/CambiarContrasena'
 import { Entrar } from './pages/Entrar'
 import { Inicio } from './pages/Inicio'
@@ -14,18 +24,16 @@ export function App() {
       <Route path="/entrar" element={<Entrar />} />
       <Route element={<RutaPrivada />}>
         <Route path="/cambiar-contrasena" element={<CambiarContrasena />} />
-        <Route element={<Layout />}>
+        <Route
+          element={
+            <GruposProvider>
+              <Layout />
+            </GruposProvider>
+          }
+        >
           <Route index element={<Inicio />} />
-          <Route
-            path="/calendario"
-            element={
-              <Proximamente
-                titulo="Calendario"
-                descripcion="Actividades, campamentos, excursiones, misas y horas santas."
-                Icono={CalendarDays}
-              />
-            }
-          />
+          <Route path="/calendario" element={<Calendario />} />
+          <Route path="/avisos" element={<Avisos />} />
           <Route
             path="/biblioteca"
             element={
@@ -47,17 +55,14 @@ export function App() {
             }
           />
           <Route path="/mas" element={<Mas />} />
-          <Route element={<RutaAdmin />}>
-            <Route
-              path="/admin"
-              element={
-                <Proximamente
-                  titulo="Panel de administración"
-                  descripcion="Grupos, miembros, avisos, eventos, virtudes, libros, encuestas y preguntas."
-                  Icono={Shield}
-                />
-              }
-            />
+          <Route path="/admin" element={<RutaAdmin />}>
+            <Route index element={<Panel />} />
+            <Route path="grupos" element={<Grupos />} />
+            <Route path="miembros" element={<Miembros />} />
+            <Route path="avisos" element={<AvisosAdmin />} />
+            <Route path="eventos" element={<EventosAdmin />} />
+            <Route path="virtudes" element={<VirtudesAdmin />} />
+            <Route path="santos" element={<Santos />} />
           </Route>
         </Route>
       </Route>

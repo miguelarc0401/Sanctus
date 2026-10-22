@@ -1,4 +1,4 @@
-import { ChevronRight, KeyRound, LogOut, Shield, type LucideIcon } from 'lucide-react'
+import { ChevronRight, KeyRound, LogOut, Megaphone, Shield, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/contexto'
 
@@ -23,11 +23,12 @@ export function Mas() {
 
       <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200">
         <p className="text-lg font-medium">{perfil?.nombre}</p>
-        <p className="text-sm text-stone-500">{sesion?.user.email}</p>
+        <p className="text-sm text-stone-500">{perfil?.acceso ?? sesion?.user.email}</p>
       </section>
 
       <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
         {perfil?.es_admin && <Opcion a="/admin" texto="Panel de administración" Icono={Shield} />}
+        <Opcion a="/avisos" texto="Avisos" Icono={Megaphone} />
         <Opcion a="/cambiar-contrasena" texto="Cambiar contraseña" Icono={KeyRound} />
       </ul>
 

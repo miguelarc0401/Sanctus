@@ -5,6 +5,8 @@ export type Perfil = {
   id: string
   nombre: string
   foto: string | null
+  // Correo o usuario con el que entra.
+  acceso: string | null
   es_admin: boolean
   debe_cambiar_contrasena: boolean
 }

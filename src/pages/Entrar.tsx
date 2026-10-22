@@ -4,6 +4,7 @@ import { useAuth } from '../auth/contexto'
 import { Boton, Campo, MensajeError } from '../components/Formulario'
 import { traducirError } from '../lib/errores'
 import { supabase } from '../lib/supabase'
+import { correoDeAcceso } from '../lib/usuarios'
 
 export function Entrar() {
   const { sesion, cargando } = useAuth()
@@ -17,7 +18,7 @@ export function Entrar() {
   async function entrar() {
     setEnviando(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email: correo.trim(), password: contrasena })
+    const { error } = await supabase.auth.signInWithPassword({ email: correoDeAcceso(correo), password: contrasena })
     setEnviando(false)
     if (error) setError(traducirError(error))
   }
@@ -37,9 +38,12 @@ export function Entrar() {
       >
         <Campo
           id="correo"
-          etiqueta="Correo"
-          type="email"
-          autoComplete="email"
+          etiqueta="Correo o usuario"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
           value={correo}
           onChange={(e) => setCorreo(e.target.value)}
