@@ -128,7 +128,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 | 1. Lo esencial ✅ | Grupos, alta de miembros, inicio con la virtud de la semana, avisos, calendario. |
 | 2. Participación ✅ | Preguntas privadas, encuestas de temas, temario de charlas. |
 | 3. Biblioteca ✅ | Subida de libros, lector protegido, anotaciones privadas. |
-| 4. Extras | Notificaciones push, añadir eventos al calendario del teléfono, conversión automática de Word, búsqueda en mis notas. |
+| 4. Extras ✅ | Notificaciones push, añadir eventos al calendario del teléfono y búsqueda en mis notas. La conversión automática de Word se descartó: necesita un servicio externo de pago y guardar como PDF desde Word basta. |
 
 Las notificaciones push en iPhone sólo funcionan si la app está instalada en la pantalla de inicio (iOS 16.4 o posterior).
 

@@ -2,6 +2,7 @@ import { ChevronRight, CircleHelp, KeyRound, LogOut, Megaphone, Shield, type Luc
 import { Link } from 'react-router'
 import { useAuth } from '../auth/contexto'
 import { Insignia } from '../components/Bloques'
+import { AjusteNotificaciones } from '../components/Notificaciones'
 import { usePreguntasSinResponder, useRespuestasNuevas, useSolicitudesPendientes } from '../lib/pendientes'
 
 function Opcion({ a, texto, Icono, insignia }: { a: string; texto: string; Icono: LucideIcon; insignia?: number }) {
@@ -31,6 +32,8 @@ export function Mas() {
         <p className="text-lg font-medium">{perfil?.nombre}</p>
         <p className="text-sm text-stone-500">{perfil?.acceso ?? sesion?.user.email}</p>
       </section>
+
+      <AjusteNotificaciones />
 
       <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
         {perfil?.es_admin && (

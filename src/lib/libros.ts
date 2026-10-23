@@ -31,6 +31,8 @@ export type Anotacion = {
   creada_en: string
 }
 
+export type NotaConLibro = Anotacion & { libro: { titulo: string } }
+
 export const ICONOS_ANOTACION: Record<TipoAnotacion, LucideIcon> = {
   frase: Quote,
   nota: StickyNote,
@@ -97,7 +99,7 @@ export function useMisNotas() {
   return useQuery({
     queryKey: ['anotaciones', 'todas'],
     queryFn: () =>
-      datos<(Anotacion & { libro: { titulo: string } })[]>(
+      datos<NotaConLibro[]>(
         supabase
           .from('anotaciones')
           .select('*, libro:libros(titulo)')

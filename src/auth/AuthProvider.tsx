@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { desactivarNotificaciones } from '../lib/notificaciones'
 import { supabase } from '../lib/supabase'
 import { AuthContext, type Perfil } from './contexto'
 
@@ -43,6 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [recargarPerfil])
 
   const cerrarSesion = useCallback(async () => {
+    // Este teléfono deja de recibir notificaciones de esta cuenta (sin esperar más de 3 segundos).
+    await Promise.race([desactivarNotificaciones().catch(() => {}), new Promise((ok) => setTimeout(ok, 3000))])
     await supabase.auth.signOut()
     setPerfil(null)
     setPerfilDe(null)

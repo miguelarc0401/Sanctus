@@ -1,9 +1,9 @@
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Cargando, Segmentos, Titulo, Vacio } from '../components/Bloques'
 import { useGrupos } from '../grupos/contexto'
-import { ICONOS_ANOTACION, urlPortada, useLibros, useMisNotas, useProgreso } from '../lib/libros'
+import { ICONOS_ANOTACION, urlPortada, useLibros, useMisNotas, useProgreso, type NotaConLibro } from '../lib/libros'
 
 function Libros({ grupoId }: { grupoId: number }) {
   const { data: libros = [], isPending } = useLibros(grupoId)
@@ -54,14 +54,47 @@ function Libros({ grupoId }: { grupoId: number }) {
   )
 }
 
+// Para buscar sin importar mayúsculas ni acentos: «Oración» encuentra «oracion».
+const normalizar = (texto: string) =>
+  texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+
 function MisNotas() {
   const { data: notas = [], isPending } = useMisNotas()
+  const [busqueda, setBusqueda] = useState('')
 
   if (isPending) return <Cargando />
   if (notas.length === 0) {
     return <Vacio>Cuando guardes frases o escribas notas en un libro, aparecerán aquí. Sólo tú las ves.</Vacio>
   }
 
+  const buscada = normalizar(busqueda.trim())
+  const visibles = buscada
+    ? notas.filter((n) => normalizar(`${n.texto ?? ''} ${n.nota ?? ''} ${n.libro.titulo}`).includes(buscada))
+    : notas
+
+  return (
+    <div className="space-y-4">
+      <label className="relative block">
+        <span className="sr-only">Buscar en mis frases y notas</span>
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-stone-400" aria-hidden />
+        <input
+          type="search"
+          placeholder="Buscar en mis frases y notas"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="block w-full rounded-xl border border-stone-300 bg-white py-3 pr-4 pl-12 text-base shadow-sm outline-none focus:border-cielo-600 focus:ring-2 focus:ring-cielo-200"
+        />
+      </label>
+      {visibles.length === 0 && <Vacio>No encontré nada con «{busqueda.trim()}».</Vacio>}
+      <ListaDeNotas notas={visibles} />
+    </div>
+  )
+}
+
+function ListaDeNotas({ notas }: { notas: NotaConLibro[] }) {
   return (
     <ul className="space-y-3">
       {notas.map((nota) => {

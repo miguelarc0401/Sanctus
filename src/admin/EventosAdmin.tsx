@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { Cargando, EncabezadoAdmin, EtiquetaTipo, Vacio } from '../components/Bloques'
 import { AreaTexto, Campo, Casilla, MensajeError, PieFormulario, Selector } from '../components/Formulario'
 import { Hoja } from '../components/Hoja'
-import { borrarFila, datos, guardarFila } from '../lib/consultas'
+import { borrarFila, datos, guardarFila, insertarFila } from '../lib/consultas'
 import { terminoAntesDe } from '../lib/contenido'
+import { notificar } from '../lib/notificaciones'
 import { aValorDeCampo, deValorDeCampo, diaLargo, hora, inicioDeHoy } from '../lib/fechas'
 import { supabase } from '../lib/supabase'
 import { TIPOS_EVENTO, type Evento, type TipoEvento } from '../lib/tipos'
@@ -22,6 +23,7 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
   const [descripcion, setDescripcion] = useState(evento?.descripcion ?? '')
   const [destino, setDestino] = useState(evento?.grupo_id ? String(evento.grupo_id) : '')
   const [errorFechas, setErrorFechas] = useState<string | null>(null)
+  const [avisar, setAvisar] = useState(true)
   const { guardando, error, enviar } = useEnvio()
 
   // Al cambiar entre «todo el día» y «con hora», se conserva la fecha y se ajusta el formato del campo.
@@ -43,7 +45,7 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
         }
         setErrorFechas(null)
         void enviar(async () => {
-          await guardarFila('eventos', evento?.id ?? null, {
+          const valores = {
             tipo,
             titulo: titulo.trim(),
             todo_el_dia: todoElDia,
@@ -52,7 +54,13 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
             lugar: lugar.trim() || null,
             descripcion: descripcion.trim() || null,
             grupo_id: destino ? Number(destino) : null,
-          })
+          }
+          if (evento) {
+            await guardarFila('eventos', evento.id, valores)
+          } else {
+            const id = await insertarFila('eventos', valores)
+            if (avisar) void notificar('evento', id)
+          }
           onListo()
         })
       }}
@@ -95,6 +103,14 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
         onChange={(e) => setDescripcion(e.target.value)}
       />
       <SelectorDeDestino valor={destino} onCambiar={setDestino} />
+      {!evento && (
+        <Casilla
+          id="avisar"
+          etiqueta="Enviar notificación a los teléfonos"
+          checked={avisar}
+          onChange={(e) => setAvisar(e.target.checked)}
+        />
+      )}
       {(errorFechas || error) && <MensajeError>{errorFechas ?? error}</MensajeError>}
       <PieFormulario
         guardando={guardando}

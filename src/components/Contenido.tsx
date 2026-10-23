@@ -1,7 +1,10 @@
-import { Clock, MapPin, Pin, Sparkles } from 'lucide-react'
+import { CalendarPlus, Clock, MapPin, Pin, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { descargarIcs, enlaceGoogle } from '../lib/calendario'
 import { aFechaISO, diaCorto, diaLargo, diaSemana, hora, semanaDel } from '../lib/fechas'
 import type { Aviso, Evento, Virtud } from '../lib/tipos'
 import { EtiquetaTipo } from './Bloques'
+import { Hoja } from './Hoja'
 
 const mismoDia = (a: string, b: string) => aFechaISO(new Date(a)) === aFechaISO(new Date(b))
 
@@ -10,6 +13,45 @@ function horario(evento: Evento) {
   if (todo_el_dia) return fin && !mismoDia(inicio, fin) ? `Todo el día, hasta el ${diaLargo(fin)}` : 'Todo el día'
   if (!fin) return hora(inicio)
   return mismoDia(inicio, fin) ? `${hora(inicio)} – ${hora(fin)}` : `${hora(inicio)} – ${diaLargo(fin)}, ${hora(fin)}`
+}
+
+function AgregarAlCalendario({ evento }: { evento: Evento }) {
+  const [abierta, setAbierta] = useState(false)
+  return (
+    <>
+      <button
+        onClick={() => setAbierta(true)}
+        className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-cielo-700 hover:text-cielo-900"
+      >
+        <CalendarPlus className="size-4" aria-hidden /> Agregar a mi calendario
+      </button>
+      {abierta && (
+        <Hoja titulo="Agregar a mi calendario" onCerrar={() => setAbierta(false)}>
+          <div className="space-y-3">
+            <p className="text-stone-600">{evento.titulo}</p>
+            <a
+              href={enlaceGoogle(evento)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setAbierta(false)}
+              className="flex w-full items-center justify-center rounded-xl bg-cielo-800 px-5 py-3 font-medium text-white hover:bg-cielo-700"
+            >
+              Google Calendar
+            </a>
+            <button
+              onClick={() => {
+                descargarIcs(evento)
+                setAbierta(false)
+              }}
+              className="flex w-full items-center justify-center rounded-xl bg-white px-5 py-3 font-medium text-cielo-800 ring-1 ring-stone-300 hover:bg-cielo-50"
+            >
+              iPhone u otro calendario
+            </button>
+          </div>
+        </Hoja>
+      )}
+    </>
+  )
 }
 
 export function FilaEvento({ evento }: { evento: Evento }) {
@@ -31,6 +73,7 @@ export function FilaEvento({ evento }: { evento: Evento }) {
           </p>
         )}
         {evento.descripcion && <p className="pt-1 text-sm whitespace-pre-line text-stone-600">{evento.descripcion}</p>}
+        <AgregarAlCalendario evento={evento} />
       </div>
     </li>
   )

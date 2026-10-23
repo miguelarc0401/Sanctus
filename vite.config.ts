@@ -27,6 +27,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Notificaciones: public/sw-push.js agrega los eventos «push» y «notificationclick».
+        importScripts: ['sw-push.js'],
         // Las fuentes traen muchos alfabetos; se guardan sólo las que el navegador llega a pedir.
         runtimeCaching: [
           {

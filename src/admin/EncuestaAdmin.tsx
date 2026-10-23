@@ -7,6 +7,7 @@ import { BarrasDeResultados } from '../components/Encuestas'
 import { AreaTexto, Boton, Campo, MensajeError, PieFormulario } from '../components/Formulario'
 import { Hoja } from '../components/Hoja'
 import { borrarFila, datos, guardarFila } from '../lib/consultas'
+import { notificar } from '../lib/notificaciones'
 import { useResultados, useTemas } from '../lib/participacion'
 import { supabase } from '../lib/supabase'
 import type { Encuesta, Tema } from '../lib/tipos'
@@ -99,6 +100,7 @@ function ControlDeFase({ encuesta, cuantosTemas, onCambio }: { encuesta: Encuest
     if (!confirm('¿Abrir la votación? Ya no se podrán proponer más temas.')) return
     void enviar(async () => {
       await guardarFila('encuestas', encuesta.id, { fase: 'votacion' })
+      void notificar('encuesta', encuesta.id)
       onCambio()
     })
   }

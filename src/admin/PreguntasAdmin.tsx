@@ -5,6 +5,7 @@ import { AreaTexto, Boton, MensajeError, PieFormulario } from '../components/For
 import { Hoja } from '../components/Hoja'
 import { borrarFila, datos } from '../lib/consultas'
 import { diaCorto } from '../lib/fechas'
+import { notificar } from '../lib/notificaciones'
 import { supabase } from '../lib/supabase'
 import type { Pregunta } from '../lib/tipos'
 import { useEnvio } from '../lib/useEnvio'
@@ -27,6 +28,8 @@ function FormRespuesta({ pregunta, onListo }: { pregunta: PreguntaConAutor; onLi
             .update({ respuesta: respuesta.trim(), respondida_en: new Date().toISOString(), respuesta_vista: false })
             .eq('id', pregunta.id)
           if (error) throw error
+          // Sólo la primera respuesta avisa al teléfono; corregirla después no vuelve a notificar.
+          if (!pregunta.respuesta) void notificar('respuesta', pregunta.id)
           onListo()
         })
       }}

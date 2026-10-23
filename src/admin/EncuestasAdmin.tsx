@@ -8,6 +8,7 @@ import { Hoja } from '../components/Hoja'
 import { useGrupos } from '../grupos/contexto'
 import { datos } from '../lib/consultas'
 import { diaCorto } from '../lib/fechas'
+import { notificar } from '../lib/notificaciones'
 import { useEncuestas } from '../lib/participacion'
 import { supabase } from '../lib/supabase'
 import { useEnvio } from '../lib/useEnvio'
@@ -92,6 +93,7 @@ export function EncuestasAdmin() {
           <FormNuevaEncuesta
             grupoId={grupo.id}
             onCreada={(id) => {
+              void notificar('encuesta', id)
               void clienteConsultas.invalidateQueries({ queryKey: ['encuestas'] })
               navegar(`/admin/encuestas/${id}`)
             }}

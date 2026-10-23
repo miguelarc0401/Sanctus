@@ -14,6 +14,7 @@ import { useAuth } from '../auth/contexto'
 import { AvisoInstalar } from '../components/AvisoInstalar'
 import { Tarjeta, Titulo } from '../components/Bloques'
 import { FilaEvento, TarjetaAviso, TarjetaVirtud } from '../components/Contenido'
+import { InvitacionNotificaciones } from '../components/Notificaciones'
 import { useGrupos } from '../grupos/contexto'
 import { useAvisos, useProximosEventos, useVirtudDeLaSemana } from '../lib/contenido'
 import { useEncuestas } from '../lib/participacion'
@@ -110,6 +111,7 @@ export function Inicio() {
       <Recordatorios grupoId={grupoId} />
 
       <AvisoInstalar />
+      <InvitacionNotificaciones />
 
       <TarjetaVirtud virtud={virtud} />
 

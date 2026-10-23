@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { Cargando, EncabezadoAdmin, Vacio } from '../components/Bloques'
 import { AreaTexto, Campo, Casilla, MensajeError, PieFormulario } from '../components/Formulario'
 import { Hoja } from '../components/Hoja'
-import { borrarFila, datos, guardarFila } from '../lib/consultas'
+import { borrarFila, datos, guardarFila, insertarFila } from '../lib/consultas'
 import { diaCorto } from '../lib/fechas'
+import { notificar } from '../lib/notificaciones'
 import { supabase } from '../lib/supabase'
 import type { Aviso } from '../lib/tipos'
 import { useEnvio } from '../lib/useEnvio'
@@ -16,6 +17,7 @@ function FormAviso({ aviso, onListo }: { aviso: Aviso | null; onListo: () => voi
   const [texto, setTexto] = useState(aviso?.texto ?? '')
   const [destino, setDestino] = useState(aviso?.grupo_id ? String(aviso.grupo_id) : '')
   const [fijado, setFijado] = useState(aviso?.fijado ?? false)
+  const [avisar, setAvisar] = useState(true)
   const { guardando, error, enviar } = useEnvio()
 
   return (
@@ -24,12 +26,18 @@ function FormAviso({ aviso, onListo }: { aviso: Aviso | null; onListo: () => voi
       onSubmit={(e) => {
         e.preventDefault()
         void enviar(async () => {
-          await guardarFila('avisos', aviso?.id ?? null, {
+          const valores = {
             titulo: titulo.trim(),
             texto: texto.trim(),
             grupo_id: destino ? Number(destino) : null,
             fijado,
-          })
+          }
+          if (aviso) {
+            await guardarFila('avisos', aviso.id, valores)
+          } else {
+            const id = await insertarFila('avisos', valores)
+            if (avisar) void notificar('aviso', id)
+          }
           onListo()
         })
       }}
@@ -43,6 +51,14 @@ function FormAviso({ aviso, onListo }: { aviso: Aviso | null; onListo: () => voi
         checked={fijado}
         onChange={(e) => setFijado(e.target.checked)}
       />
+      {!aviso && (
+        <Casilla
+          id="avisar"
+          etiqueta="Enviar notificación a los teléfonos"
+          checked={avisar}
+          onChange={(e) => setAvisar(e.target.checked)}
+        />
+      )}
       {error && <MensajeError>{error}</MensajeError>}
       <PieFormulario
         guardando={guardando}

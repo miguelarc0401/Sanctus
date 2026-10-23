@@ -22,6 +22,12 @@ export async function guardarFila(tabla: string, id: number | string | null, val
   if (error) throw error
 }
 
+// Inserta una fila y devuelve su id (para, por ejemplo, avisar con una notificación).
+export async function insertarFila(tabla: string, valores: Record<string, unknown>) {
+  const { id } = await datos<{ id: number }>(supabase.from(tabla).insert(valores).select('id').single())
+  return id
+}
+
 export async function borrarFila(tabla: string, id: number) {
   const { error } = await supabase.from(tabla).delete().eq('id', id)
   if (error) throw error
