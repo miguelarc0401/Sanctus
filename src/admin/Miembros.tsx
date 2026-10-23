@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, KeyRound, Pencil, RefreshCw } from 'lucide-react'
+import { Check, Copy, KeyRound, Pencil, RefreshCw, UserCheck, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../auth/contexto'
 import { Cargando, EncabezadoAdmin, Vacio } from '../components/Bloques'
@@ -7,6 +7,7 @@ import { Boton, Campo, Casilla, MensajeError, PieFormulario, Selector } from '..
 import { Hoja } from '../components/Hoja'
 import { nombreDeGrupo, useGrupos } from '../grupos/contexto'
 import { datos, guardarFila, llamarMiembros } from '../lib/consultas'
+import { diaCorto } from '../lib/fechas'
 import { supabase } from '../lib/supabase'
 import type { Grupo, Miembro } from '../lib/tipos'
 import { useEnvio } from '../lib/useEnvio'
@@ -136,6 +137,10 @@ function FormNuevoMiembro({
         })
       }}
     >
+      <p className="text-sm text-stone-500">
+        Normalmente cada quien crea su cuenta desde la app y tú la apruebas. Usa esto sólo si alguien no puede
+        registrarse por su cuenta.
+      </p>
       <Campo
         id="nombre"
         etiqueta="Nombre completo"
@@ -168,6 +173,37 @@ function FormNuevoMiembro({
   )
 }
 
+function FormAprobar({ miembro, grupos, onListo }: { miembro: Miembro; grupos: Grupo[]; onListo: () => void }) {
+  const [elegidos, setElegidos] = useState<number[]>(miembro.grupo_solicitado ? [miembro.grupo_solicitado] : [])
+  const { guardando, error, enviar } = useEnvio()
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void enviar(async () => {
+          const { error } = await supabase.rpc('aprobar_miembro', { usuario: miembro.id, grupos: elegidos })
+          if (error) throw error
+          onListo()
+        })
+      }}
+    >
+      <div>
+        <p className="font-medium text-stone-900">{miembro.nombre}</p>
+        <p className="font-mono text-sm text-stone-500">{miembro.acceso}</p>
+        {miembro.nota_registro && <p className="mt-2 text-stone-700 italic">«{miembro.nota_registro}»</p>}
+      </div>
+      <CasillasDeGrupos grupos={grupos} elegidos={elegidos} onCambiar={setElegidos} />
+      {elegidos.length === 0 && (
+        <p className="text-sm text-oro-600">Sin grupo sólo verá lo que publiques para toda la parroquia.</p>
+      )}
+      {error && <MensajeError>{error}</MensajeError>}
+      <PieFormulario guardando={guardando} textoGuardar="Aprobar" />
+    </form>
+  )
+}
+
 function FormMiembro({
   miembro,
   grupos,
@@ -183,11 +219,22 @@ function FormMiembro({
 }) {
   const actuales = miembro.miembros.map((m) => m.grupo_id)
   const [nombre, setNombre] = useState(miembro.nombre)
+  const [acceso, setAcceso] = useState(miembro.acceso ?? '')
+  const [activa, setActiva] = useState(miembro.estado === 'aprobado')
   const [elegidos, setElegidos] = useState(actuales)
   const { guardando, error, enviar } = useEnvio()
 
   async function guardar() {
     if (nombre.trim() !== miembro.nombre) await guardarFila('perfiles', miembro.id, { nombre: nombre.trim() })
+    const accesoNuevo = acceso.trim().toLowerCase()
+    if (accesoNuevo !== miembro.acceso) await llamarMiembros({ accion: 'cambiar_acceso', id: miembro.id, acceso: accesoNuevo })
+    if (activa !== (miembro.estado === 'aprobado')) {
+      const { error } = await supabase.rpc('cambiar_estado', {
+        usuario: miembro.id,
+        nuevo: activa ? 'aprobado' : 'suspendido',
+      })
+      if (error) throw error
+    }
     const agregar = elegidos.filter((id) => !actuales.includes(id))
     const quitar = actuales.filter((id) => !elegidos.includes(id))
     if (agregar.length > 0) {
@@ -211,32 +258,50 @@ function FormMiembro({
         void enviar(guardar)
       }}
     >
-      <p className="text-sm text-stone-500">
-        Entra con: <span className="font-mono text-stone-800">{miembro.acceso}</span>
-      </p>
       <Campo id="nombre" etiqueta="Nombre completo" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <Campo
+        id="acceso"
+        etiqueta="Usuario o correo"
+        ayuda="(con esto entra a la app)"
+        required
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        value={acceso}
+        onChange={(e) => setAcceso(e.target.value)}
+      />
       <CasillasDeGrupos grupos={grupos} elegidos={elegidos} onCambiar={setElegidos} />
 
       {!esUnoMismo && (
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-stone-200">
-          <p className="font-medium text-stone-800">¿Olvidó su contraseña?</p>
-          <p className="mt-1 text-sm text-stone-500">Se le asigna una contraseña temporal nueva y tendrá que cambiarla al entrar.</p>
-          <Boton
-            type="button"
-            variante="secundario"
-            className="mt-3"
-            disabled={guardando}
-            onClick={() => {
-              const contrasena = generarContrasena()
-              void enviar(async () => {
-                await llamarMiembros({ accion: 'restablecer', id: miembro.id, contrasena })
-                onContrasenaNueva({ nombre: miembro.nombre, acceso: miembro.acceso ?? '', contrasena })
-              })
-            }}
-          >
-            <KeyRound className="size-4" aria-hidden /> Darle una contraseña nueva
-          </Boton>
-        </div>
+        <>
+          <Casilla
+            id="activa"
+            etiqueta="Cuenta activa (si la desactivas, no podrá ver nada hasta que la reactives)"
+            checked={activa}
+            onChange={(e) => setActiva(e.target.checked)}
+          />
+          <div className="rounded-2xl bg-white p-4 ring-1 ring-stone-200">
+            <p className="font-medium text-stone-800">¿Olvidó su contraseña?</p>
+            <p className="mt-1 text-sm text-stone-500">
+              Se le asigna una contraseña temporal nueva y tendrá que cambiarla al entrar.
+            </p>
+            <Boton
+              type="button"
+              variante="secundario"
+              className="mt-3"
+              disabled={guardando}
+              onClick={() => {
+                const contrasena = generarContrasena()
+                void enviar(async () => {
+                  await llamarMiembros({ accion: 'restablecer', id: miembro.id, contrasena })
+                  onContrasenaNueva({ nombre: miembro.nombre, acceso: miembro.acceso ?? '', contrasena })
+                })
+              }}
+            >
+              <KeyRound className="size-4" aria-hidden /> Darle una contraseña nueva
+            </Boton>
+          </div>
+        </>
       )}
 
       {error && <MensajeError>{error}</MensajeError>}
@@ -258,7 +323,68 @@ function FormMiembro({
   )
 }
 
-type Ventana = { tipo: 'nuevo' } | { tipo: 'editar'; miembro: Miembro } | { tipo: 'entrega'; entrega: Entrega }
+function Solicitudes({
+  solicitudes,
+  grupos,
+  onAprobar,
+  onRechazada,
+}: {
+  solicitudes: Miembro[]
+  grupos: Grupo[]
+  onAprobar: (m: Miembro) => void
+  onRechazada: () => void
+}) {
+  const { guardando, error, enviar } = useEnvio()
+
+  return (
+    <section className="space-y-3">
+      <h2 className="px-1 text-sm font-semibold tracking-wide text-oro-600 uppercase">
+        Solicitudes nuevas ({solicitudes.length})
+      </h2>
+      {error && <MensajeError>{error}</MensajeError>}
+      {solicitudes.map((solicitud) => {
+        const pidio = grupos.find((g) => g.id === solicitud.grupo_solicitado)
+        return (
+          <article key={solicitud.id} className="rounded-2xl bg-white p-4 shadow-sm ring-2 ring-oro-400/50">
+            <p className="font-medium text-stone-900">{solicitud.nombre}</p>
+            <p className="font-mono text-sm text-stone-500">{solicitud.acceso}</p>
+            <p className="mt-1 text-sm text-stone-600">
+              {pidio ? `Pidió entrar a: ${nombreDeGrupo(pidio)}` : 'No eligió grupo'} · {diaCorto(solicitud.creado_en)}
+            </p>
+            {solicitud.nota_registro && <p className="mt-2 text-stone-700 italic">«{solicitud.nota_registro}»</p>}
+            <div className="mt-3 flex gap-2">
+              <Boton className="flex-1 py-2.5" disabled={guardando} onClick={() => onAprobar(solicitud)}>
+                <UserCheck className="size-4" aria-hidden /> Aprobar
+              </Boton>
+              <Boton
+                variante="peligro"
+                className="flex-1 py-2.5"
+                disabled={guardando}
+                onClick={() => {
+                  if (!confirm(`¿Rechazar la solicitud de ${solicitud.nombre}? Se borrará su cuenta.`)) return
+                  void enviar(async () => {
+                    await llamarMiembros({ accion: 'eliminar', id: solicitud.id })
+                    onRechazada()
+                  })
+                }}
+              >
+                <UserX className="size-4" aria-hidden /> Rechazar
+              </Boton>
+            </div>
+          </article>
+        )
+      })}
+    </section>
+  )
+}
+
+type Ventana =
+  | { tipo: 'nuevo' }
+  | { tipo: 'aprobar'; miembro: Miembro }
+  | { tipo: 'editar'; miembro: Miembro }
+  | { tipo: 'entrega'; entrega: Entrega }
+
+const titulos = { nuevo: 'Crear cuenta', aprobar: 'Aprobar solicitud', editar: 'Editar miembro', entrega: 'Cuenta lista' }
 
 export function Miembros() {
   const clienteConsultas = useQueryClient()
@@ -267,17 +393,21 @@ export function Miembros() {
   const [filtro, setFiltro] = useState('todos')
   const [ventana, setVentana] = useState<Ventana | null>(null)
 
-  const { data: miembros = [], isPending } = useQuery({
+  const { data: todos = [], isPending } = useQuery({
     queryKey: ['miembros'],
     queryFn: () =>
       datos<Miembro[]>(
         supabase
           .from('perfiles')
-          .select('id, nombre, acceso, es_admin, debe_cambiar_contrasena, miembros(grupo_id)')
+          .select(
+            'id, nombre, acceso, es_admin, debe_cambiar_contrasena, estado, grupo_solicitado, nota_registro, creado_en, miembros(grupo_id)',
+          )
           .order('nombre'),
       ),
   })
 
+  const solicitudes = todos.filter((m) => m.estado === 'pendiente')
+  const miembros = todos.filter((m) => m.estado !== 'pendiente')
   const visibles = miembros.filter((m) => {
     if (filtro === 'todos') return true
     if (filtro === 'sin-grupo') return m.miembros.length === 0
@@ -289,11 +419,18 @@ export function Miembros() {
     void clienteConsultas.invalidateQueries({ queryKey: ['grupos'] })
   }
 
-  const titulos = { nuevo: 'Nuevo miembro', editar: 'Editar miembro', entrega: 'Cuenta lista' }
-
   return (
     <div className="space-y-5">
-      <EncabezadoAdmin titulo="Miembros" textoNuevo="Nuevo miembro" onNuevo={() => setVentana({ tipo: 'nuevo' })} />
+      <EncabezadoAdmin titulo="Miembros" textoNuevo="Crear cuenta" onNuevo={() => setVentana({ tipo: 'nuevo' })} />
+
+      {solicitudes.length > 0 && (
+        <Solicitudes
+          solicitudes={solicitudes}
+          grupos={grupos}
+          onAprobar={(miembro) => setVentana({ tipo: 'aprobar', miembro })}
+          onRechazada={recargar}
+        />
+      )}
 
       <Selector id="filtro" etiqueta="Mostrar" value={filtro} onChange={(e) => setFiltro(e.target.value)}>
         <option value="todos">Todos ({miembros.length})</option>
@@ -319,9 +456,16 @@ export function Miembros() {
               >
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-stone-900">{miembro.nombre}</span>
+                    <span className={miembro.estado === 'suspendido' ? 'text-stone-400 line-through' : 'text-stone-900'}>
+                      {miembro.nombre}
+                    </span>
                     {miembro.es_admin && (
                       <span className="rounded-full bg-cielo-100 px-2 py-0.5 text-xs font-medium text-cielo-800">Admin</span>
+                    )}
+                    {miembro.estado === 'suspendido' && (
+                      <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600">
+                        Desactivada
+                      </span>
                     )}
                     {miembro.debe_cambiar_contrasena && (
                       <span className="rounded-full bg-oro-400/25 px-2 py-0.5 text-xs font-medium text-oro-600">
@@ -355,6 +499,16 @@ export function Miembros() {
               onCreado={(entrega) => {
                 recargar()
                 setVentana({ tipo: 'entrega', entrega })
+              }}
+            />
+          )}
+          {ventana.tipo === 'aprobar' && (
+            <FormAprobar
+              miembro={ventana.miembro}
+              grupos={grupos}
+              onListo={() => {
+                recargar()
+                setVentana(null)
               }}
             />
           )}

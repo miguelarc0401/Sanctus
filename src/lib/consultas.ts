@@ -28,8 +28,13 @@ export async function borrarFila(tabla: string, id: number) {
 }
 
 // Llama a la función de Supabase que da de alta, cambia contraseñas y elimina miembros.
-export async function llamarMiembros<T>(cuerpo: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('miembros', { body: cuerpo })
+export function llamarMiembros<T>(cuerpo: Record<string, unknown>) {
+  return llamarFuncion<T>('miembros', cuerpo)
+}
+
+// Llama a una función de Supabase y convierte su mensaje de error en un Error legible.
+export async function llamarFuncion<T>(nombre: string, cuerpo?: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke(nombre, cuerpo ? { body: cuerpo } : { method: 'GET' })
   if (error) {
     let mensaje = 'No se pudo completar la acción. Inténtalo de nuevo.'
     try {

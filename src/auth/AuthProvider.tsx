@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!usuarioId) return
     const { data, error } = await supabase
       .from('perfiles')
-      .select('id, nombre, foto, acceso, es_admin, debe_cambiar_contrasena')
+      .select('id, nombre, foto, acceso, es_admin, debe_cambiar_contrasena, estado')
       .eq('id', usuarioId)
       .maybeSingle()
     if (error) console.error('No se pudo cargar el perfil', error)

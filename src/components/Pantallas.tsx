@@ -33,6 +33,29 @@ export function PerfilNoEncontrado() {
   )
 }
 
+export function CuentaEnEspera() {
+  const { perfil, recargarPerfil, cerrarSesion } = useAuth()
+  const suspendida = perfil?.estado === 'suspendido'
+  return (
+    <PantallaCentrada>
+      <h1 className="font-serif text-3xl font-semibold text-cielo-800">
+        {suspendida ? 'Tu cuenta está desactivada' : `¡Gracias, ${perfil?.nombre.split(' ')[0]}!`}
+      </h1>
+      <p className="max-w-sm text-stone-600">
+        {suspendida
+          ? 'Habla con tu coordinador para volver a activarla.'
+          : 'Tu solicitud ya le llegó al coordinador. En cuanto la apruebe podrás entrar a tu grupo.'}
+      </p>
+      <div className="flex flex-col gap-3">
+        {!suspendida && <Boton onClick={() => void recargarPerfil()}>Ya me aprobaron, revisar</Boton>}
+        <Boton variante="secundario" onClick={() => void cerrarSesion()}>
+          Cerrar sesión
+        </Boton>
+      </div>
+    </PantallaCentrada>
+  )
+}
+
 export function FaltaConfiguracion() {
   return (
     <PantallaCentrada>

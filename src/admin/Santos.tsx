@@ -13,7 +13,7 @@ function FormSanto({ santo, onListo }: { santo: Santo | null; onListo: () => voi
   const [nombre, setNombre] = useState(santo?.nombre ?? '')
   const [fiesta, setFiesta] = useState(santo?.fiesta ?? '')
   const [descripcion, setDescripcion] = useState(santo?.descripcion ?? '')
-  const { guardando, error, enviar } = useEnvio('Ya existe un santo con ese nombre.')
+  const { guardando, error, enviar } = useEnvio({ duplicado: 'Ya existe un santo con ese nombre.' })
 
   return (
     <form

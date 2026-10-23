@@ -16,6 +16,18 @@ export function SelectorDeDestino({ valor, onCambiar }: { valor: string; onCambi
   )
 }
 
+// Las encuestas y el temario son de un grupo: se trabaja con el elegido arriba.
+export function GrupoDeTrabajo() {
+  const { grupo, grupos } = useGrupos()
+  if (!grupo) return null
+  return (
+    <p className="rounded-xl bg-cielo-50 px-4 py-3 text-sm text-cielo-800 ring-1 ring-cielo-100">
+      Grupo: <strong>{nombreDeGrupo(grupo)}</strong>
+      {grupos.length > 1 && <span className="text-cielo-600"> · cámbialo arriba, junto a «Santa María»</span>}
+    </p>
+  )
+}
+
 export function Destino({ grupoId }: { grupoId: number | null }) {
   const { grupos } = useGrupos()
   const grupo = grupos.find((g) => g.id === grupoId)

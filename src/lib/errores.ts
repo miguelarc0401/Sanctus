@@ -12,12 +12,14 @@ export function traducirError(error: { code?: string; message: string }) {
   return 'Algo salió mal. Inténtalo de nuevo en un momento.'
 }
 
+export type MensajesDeError = { duplicado?: string; sinPermiso?: string }
+
 // Errores al guardar o borrar en la base de datos.
-export function traducirErrorDatos(error: unknown, siDuplicado = 'Ya existe un registro con esos datos.') {
+export function traducirErrorDatos(error: unknown, mensajes: MensajesDeError = {}) {
   const { code, message } = (error ?? {}) as { code?: string; message?: string }
-  if (code === '23505') return siDuplicado
+  if (code === '23505') return mensajes.duplicado ?? 'Ya existe un registro con esos datos.'
   if (code === '23503') return 'No se puede borrar porque todavía se está usando en otra parte.'
-  if (code === '42501') return 'No tienes permiso para hacer esto.'
+  if (code === '42501') return mensajes.sinPermiso ?? 'No tienes permiso para hacer esto.'
   if (message?.toLowerCase().includes('fetch')) return 'No hay conexión. Revisa tu internet.'
   return message || 'Algo salió mal. Inténtalo de nuevo en un momento.'
 }

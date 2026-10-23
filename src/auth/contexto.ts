@@ -9,6 +9,8 @@ export type Perfil = {
   acceso: string | null
   es_admin: boolean
   debe_cambiar_contrasena: boolean
+  // Quien se registra queda «pendiente» hasta que el administrador lo aprueba.
+  estado: 'pendiente' | 'aprobado' | 'suspendido'
 }
 
 type EstadoAuth = {

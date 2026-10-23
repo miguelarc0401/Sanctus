@@ -1,4 +1,4 @@
-// Alta, cambio de contraseña y baja de miembros. Sólo la puede usar el administrador.
+// Alta, cambio de usuario o contraseña y baja de miembros. Sólo la puede usar el administrador.
 // Necesita la clave secreta de Supabase, por eso vive aquí y no en el navegador.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -32,6 +32,7 @@ const supabase = createClient(Deno.env.get('SUPABASE_URL')!, claveSecreta(), {
 type Peticion =
   | { accion: 'crear'; nombre: string; acceso: string; contrasena: string; grupos: number[] }
   | { accion: 'restablecer'; id: string; contrasena: string }
+  | { accion: 'cambiar_acceso'; id: string; acceso: string }
   | { accion: 'eliminar'; id: string }
 
 Deno.serve(async (req) => {
@@ -76,6 +77,9 @@ Deno.serve(async (req) => {
       return responder({ error: yaExiste ? 'Ya existe una cuenta con ese correo o usuario.' : error.message }, 400)
     }
 
+    // Las cuentas que crea el administrador ya nacen aprobadas.
+    await supabase.from('perfiles').update({ estado: 'aprobado' }).eq('id', data.user.id)
+
     const grupos = peticion.grupos ?? []
     if (grupos.length > 0) {
       const { error: errorGrupos } = await supabase
@@ -93,6 +97,27 @@ Deno.serve(async (req) => {
     const { error } = await supabase.auth.admin.updateUserById(peticion.id, { password: peticion.contrasena })
     if (error) return responder({ error: error.message }, 400)
     await supabase.from('perfiles').update({ debe_cambiar_contrasena: true }).eq('id', peticion.id)
+    return responder({ ok: true })
+  }
+
+  if (peticion.accion === 'cambiar_acceso') {
+    const acceso = peticion.acceso?.trim().toLowerCase()
+    if (!acceso) return responder({ error: 'Falta el correo o usuario.' }, 400)
+    if (!acceso.includes('@') && !FORMATO_USUARIO.test(acceso)) {
+      return responder(
+        { error: 'El usuario debe tener de 3 a 30 letras o números, sin espacios ni acentos (se permiten . _ -).' },
+        400,
+      )
+    }
+    const { error } = await supabase.auth.admin.updateUserById(peticion.id, {
+      email: acceso.includes('@') ? acceso : `${acceso}@${DOMINIO_USUARIOS}`,
+      email_confirm: true,
+    })
+    if (error) {
+      const yaExiste = error.code === 'email_exists' || error.message.includes('already been registered')
+      return responder({ error: yaExiste ? 'Ya existe una cuenta con ese correo o usuario.' : error.message }, 400)
+    }
+    await supabase.from('perfiles').update({ acceso }).eq('id', peticion.id)
     return responder({ ok: true })
   }
 

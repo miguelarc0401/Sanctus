@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Cargando, Tarjeta, Titulo, Vacio } from '../components/Bloques'
+import { Cargando, Segmentos, Tarjeta, Titulo, Vacio } from '../components/Bloques'
 import { FilaEvento } from '../components/Contenido'
 import { useGrupos } from '../grupos/contexto'
 import { useEventosPasados, useProximosEventos } from '../lib/contenido'
@@ -42,17 +42,14 @@ export function Calendario() {
     <div className="space-y-5">
       <Titulo>Calendario</Titulo>
 
-      <div className="grid grid-cols-2 rounded-xl bg-stone-200/70 p-1 text-sm font-medium">
-        {[false, true].map((pasado) => (
-          <button
-            key={String(pasado)}
-            onClick={() => setVerPasados(pasado)}
-            className={`rounded-lg py-2 transition ${verPasados === pasado ? 'bg-white text-cielo-800 shadow-sm' : 'text-stone-600'}`}
-          >
-            {pasado ? 'Anteriores' : 'Próximos'}
-          </button>
-        ))}
-      </div>
+      <Segmentos
+        opciones={[
+          { valor: 'proximos', texto: 'Próximos' },
+          { valor: 'anteriores', texto: 'Anteriores' },
+        ]}
+        valor={verPasados ? 'anteriores' : 'proximos'}
+        onCambiar={(v) => setVerPasados(v === 'anteriores')}
+      />
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         <Chip activo={tipo === null} onClick={() => setTipo(null)}>

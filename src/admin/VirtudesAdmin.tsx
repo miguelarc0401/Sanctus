@@ -17,7 +17,7 @@ function FormVirtud({ virtud, onListo }: { virtud: Virtud | null; onListo: () =>
   const [explicacion, setExplicacion] = useState(virtud?.explicacion ?? '')
   const [ejemplos, setEjemplos] = useState(virtud?.ejemplos.join('\n') ?? '')
   const [destino, setDestino] = useState(virtud?.grupo_id ? String(virtud.grupo_id) : '')
-  const { guardando, error, enviar } = useEnvio('Ya hay una virtud para esa semana en ese grupo.')
+  const { guardando, error, enviar } = useEnvio({ duplicado: 'Ya hay una virtud para esa semana en ese grupo.' })
   const semana = dia ? lunesDe(deFechaISO(dia)) : ''
 
   return (

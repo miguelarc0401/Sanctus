@@ -1,7 +1,7 @@
 import { ArrowLeft, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { TIPOS_EVENTO, type TipoEvento } from '../lib/tipos'
+import { FASES, TIPOS_EVENTO, type FaseEncuesta, type TipoEvento } from '../lib/tipos'
 
 export function Tarjeta({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200 ${className}`}>{children}</section>
@@ -52,4 +52,47 @@ export function EncabezadoAdmin({
 export function EtiquetaTipo({ tipo }: { tipo: TipoEvento }) {
   const { nombre, estilo } = TIPOS_EVENTO[tipo]
   return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${estilo}`}>{nombre}</span>
+}
+
+export function EtiquetaFase({ fase }: { fase: FaseEncuesta }) {
+  const { nombre, estilo } = FASES[fase]
+  return <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${estilo}`}>{nombre}</span>
+}
+
+// Numerito de pendientes junto a una opción del menú.
+export function Insignia({ cuenta }: { cuenta?: number }) {
+  if (!cuenta) return null
+  return (
+    <span className="min-w-6 rounded-full bg-oro-500 px-2 py-0.5 text-center text-xs font-semibold text-white">
+      {cuenta}
+    </span>
+  )
+}
+
+// Botones para elegir entre dos o tres vistas («Próximos / Anteriores»).
+export function Segmentos<T extends string>({
+  opciones,
+  valor,
+  onCambiar,
+}: {
+  opciones: { valor: T; texto: string }[]
+  valor: T
+  onCambiar: (v: T) => void
+}) {
+  return (
+    <div
+      className="grid rounded-xl bg-stone-200/70 p-1 text-sm font-medium"
+      style={{ gridTemplateColumns: `repeat(${opciones.length}, minmax(0, 1fr))` }}
+    >
+      {opciones.map((opcion) => (
+        <button
+          key={opcion.valor}
+          onClick={() => onCambiar(opcion.valor)}
+          className={`rounded-lg py-2 transition ${valor === opcion.valor ? 'bg-white text-cielo-800 shadow-sm' : 'text-stone-600'}`}
+        >
+          {opcion.texto}
+        </button>
+      ))}
+    </div>
+  )
 }

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { traducirErrorDatos } from './errores'
+import { traducirErrorDatos, type MensajesDeError } from './errores'
 
 // Estado de un formulario que guarda algo: «guardando…» y el mensaje de error.
-export function useEnvio(siDuplicado?: string) {
+export function useEnvio(mensajes?: MensajesDeError) {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -12,7 +12,7 @@ export function useEnvio(siDuplicado?: string) {
     try {
       await accion()
     } catch (e) {
-      setError(traducirErrorDatos(e, siDuplicado))
+      setError(traducirErrorDatos(e, mensajes))
     } finally {
       setGuardando(false)
     }

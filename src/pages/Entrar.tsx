@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { useAuth } from '../auth/contexto'
 import { Boton, Campo, MensajeError } from '../components/Formulario'
 import { traducirError } from '../lib/errores'
@@ -63,9 +63,15 @@ export function Entrar() {
         </Boton>
       </form>
 
-      <p className="mt-8 max-w-sm text-center text-sm text-stone-500">
-        ¿No tienes cuenta u olvidaste tu contraseña? Habla con tu coordinador.
-      </p>
+      <div className="mt-8 w-full max-w-sm space-y-3 text-center">
+        <Link
+          to="/registro"
+          className="block rounded-xl bg-white px-5 py-3 font-medium text-cielo-800 ring-1 ring-stone-300 hover:bg-cielo-50"
+        >
+          ¿Eres nuevo? Crea tu cuenta
+        </Link>
+        <p className="text-sm text-stone-500">¿Olvidaste tu contraseña? Habla con tu coordinador.</p>
+      </div>
     </div>
   )
 }

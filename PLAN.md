@@ -11,7 +11,7 @@ Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos,
 | Notas en los libros | Privadas: sólo las ve quien las escribe (ni siquiera el administrador). |
 | Votación de temas | Por encuesta. Cada encuesta nueva empieza de cero: un voto por persona en cada encuesta. |
 | Preguntas al administrador | Con nombre. Sólo las ven quien pregunta y el administrador. |
-| Alta de miembros | La hace el administrador. No hay registro público. |
+| Alta de miembros | Cada quien se registra desde la app y el administrador aprueba la solicitud (y asigna grupos). Mientras tanto, la cuenta no ve nada. El administrador también puede crear cuentas, cambiar usuario, desactivarlas o eliminarlas. |
 | Administradores | Uno solo. |
 | Formato de los libros | Mayormente PDF; también Word o sólo imágenes. |
 | Santos | Catálogo editable por el administrador (empezó con 24 santos). Al crear un grupo se elige su santo. |
@@ -126,7 +126,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 |---|---|
 | 0. Base ✅ | Cuentas, proyecto, inicio de sesión, app instalable, identidad visual «Santa María». |
 | 1. Lo esencial ✅ | Grupos, alta de miembros, inicio con la virtud de la semana, avisos, calendario. |
-| 2. Participación | Preguntas privadas, encuestas de temas, temario de charlas. |
+| 2. Participación ✅ | Preguntas privadas, encuestas de temas, temario de charlas. |
 | 3. Biblioteca | Subida de libros, lector protegido, anotaciones privadas. |
 | 4. Extras | Notificaciones push, añadir eventos al calendario del teléfono, conversión automática de Word, búsqueda en mis notas. |
 

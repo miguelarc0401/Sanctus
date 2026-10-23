@@ -12,6 +12,8 @@ export function deFechaISO(valor: string) {
   return new Date(`${valor}T00:00`)
 }
 
+export const hoyISO = () => aFechaISO(new Date())
+
 export function lunesDe(fecha = new Date()) {
   const lunes = new Date(fecha)
   lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7))
@@ -46,4 +48,6 @@ export const diaCorto = (iso: string) => formatoDiaCorto.format(new Date(iso))
 export const hora = (iso: string) => formatoHora.format(new Date(iso))
 export const mes = (iso: string) => formatoMes.format(new Date(iso))
 export const diaSemana = (iso: string) => formatoDiaSemana.format(new Date(iso))
-export const semanaDel = (semana: string) => `Semana del ${formatoDiaLargo.format(deFechaISO(semana))}`
+// Para columnas de tipo fecha («2026-10-19»), sin hora.
+export const fechaLarga = (fecha: string) => formatoDiaLargo.format(deFechaISO(fecha))
+export const semanaDel =(semana: string) => `Semana del ${formatoDiaLargo.format(deFechaISO(semana))}`
