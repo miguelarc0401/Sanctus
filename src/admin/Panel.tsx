@@ -27,6 +27,7 @@ export function Panel() {
     { a: '/admin/avisos', titulo: 'Avisos', descripcion: 'Publica avisos para un grupo o para todos.', Icono: Megaphone },
     { a: '/admin/eventos', titulo: 'Calendario', descripcion: 'Actividades, misas, horas santas y más.', Icono: CalendarDays },
     { a: '/admin/virtudes', titulo: 'Virtud de la semana', descripcion: 'Programa la virtud de cada semana.', Icono: Sparkles },
+    { a: '/admin/libros', titulo: 'Biblioteca', descripcion: 'Sube libros y compártelos con los grupos.', Icono: BookOpen },
     { a: '/admin/encuestas', titulo: 'Encuestas de temas', descripcion: 'Propuestas, votación y resultados.', Icono: Vote },
     { a: '/admin/temario', titulo: 'Temario de charlas', descripcion: 'El plan de charlas de cada grupo.', Icono: ClipboardList },
     { a: '/admin/grupos', titulo: 'Grupos', descripcion: 'Crea grupos y asígnales su santo.', Icono: Church },
@@ -54,13 +55,6 @@ export function Panel() {
           </li>
         ))}
       </ul>
-
-      <section className="space-y-2">
-        <h2 className="px-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">Próximamente</h2>
-        <p className="flex items-center gap-2 rounded-xl bg-stone-100 px-3 py-3 text-sm text-stone-500">
-          <BookOpen className="size-4 shrink-0" aria-hidden /> Biblioteca de libros de reflexión
-        </p>
-      </section>
     </div>
   )
 }

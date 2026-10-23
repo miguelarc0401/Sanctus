@@ -127,7 +127,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 | 0. Base ✅ | Cuentas, proyecto, inicio de sesión, app instalable, identidad visual «Santa María». |
 | 1. Lo esencial ✅ | Grupos, alta de miembros, inicio con la virtud de la semana, avisos, calendario. |
 | 2. Participación ✅ | Preguntas privadas, encuestas de temas, temario de charlas. |
-| 3. Biblioteca | Subida de libros, lector protegido, anotaciones privadas. |
+| 3. Biblioteca ✅ | Subida de libros, lector protegido, anotaciones privadas. |
 | 4. Extras | Notificaciones push, añadir eventos al calendario del teléfono, conversión automática de Word, búsqueda en mis notas. |
 
 Las notificaciones push en iPhone sólo funcionan si la app está instalada en la pantalla de inicio (iOS 16.4 o posterior).
