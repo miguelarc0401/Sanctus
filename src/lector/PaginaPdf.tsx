@@ -35,7 +35,8 @@ export function PaginaPdf({
   const marco = useRef<HTMLDivElement>(null)
   const lienzo = useRef<HTMLDivElement>(null)
   const capa = useRef<HTMLDivElement>(null)
-  const [alto, setAlto] = useState<number | null>(null)
+  // Alto entre ancho de esta página ya dibujada; con ella cambia de tamaño al instante al agrandarla.
+  const [propia, setPropia] = useState<number | null>(null)
   const [capaLista, setCapaLista] = useState(0)
   // Las páginas escaneadas son sólo imagen: no tienen texto que subrayar.
   const [sinTexto, setSinTexto] = useState(false)
@@ -50,7 +51,7 @@ export function PaginaPdf({
       if (cancelado) return
       dibujo.lienzo.className = 'lienzo absolute inset-0 size-full'
       lienzo.current!.replaceChildren(dibujo.lienzo)
-      setAlto(dibujo.alto)
+      setPropia(dibujo.alto / ancho)
       const [contenido, pagina] = await Promise.all([textoDePagina(pdf, numero), pdf.getPage(numero)])
       if (cancelado) return
       setSinTexto(contenido.items.length === 0)
@@ -105,7 +106,7 @@ export function PaginaPdf({
       data-pagina={numero}
       onClick={alTocar}
       className="pagina relative shrink-0"
-      style={{ width: ancho, height: alto ?? ancho * proporcion }}
+      style={{ width: ancho, height: ancho * (propia ?? proporcion) }}
     >
       <div ref={lienzo} aria-hidden className="absolute inset-0 z-0" />
       {lado && <div aria-hidden className={`lomo lomo-${lado} pointer-events-none absolute inset-y-0 z-[1]`} />}

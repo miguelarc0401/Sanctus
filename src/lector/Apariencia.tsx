@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react'
-import { TEMAS, ZOOMS, type Ajustes, type Tema } from './ajustes'
+import { TEMAS, ZOOM_MAXIMO, zoomMayor, zoomMenor, type Ajustes, type Tema } from './ajustes'
 import { BotonIcono, Panel } from './Piezas'
 
 function Interruptor({ etiqueta, ayuda, activo, onCambiar }: { etiqueta: string; ayuda?: string; activo: boolean; onCambiar: (v: boolean) => void }) {
@@ -19,15 +19,17 @@ function Interruptor({ etiqueta, ayuda, activo, onCambiar }: { etiqueta: string;
 export function Apariencia({
   ajustes,
   onCambiar,
+  onZoom,
   puedeDosPaginas,
   onCerrar,
 }: {
   ajustes: Ajustes
   onCambiar: (cambio: Partial<Ajustes>) => void
+  onZoom: (zoom: number) => void
   puedeDosPaginas: boolean
   onCerrar: () => void
 }) {
-  const nivel = ZOOMS.indexOf(ajustes.zoom)
+  const tactil = window.matchMedia('(pointer: coarse)').matches
   return (
     <Panel titulo="Apariencia" variante="tarjeta" onCerrar={onCerrar}>
       <div className="space-y-5">
@@ -59,19 +61,23 @@ export function Apariencia({
         <section>
           <h3 className="mb-2 text-sm font-medium text-(--lector-tenue)">Tamaño de la página</h3>
           <div className="flex items-center justify-between gap-2 rounded-2xl bg-(--lector-suave) p-1">
-            <BotonIcono etiqueta="Más pequeña" onClick={() => onCambiar({ zoom: ZOOMS[nivel - 1] })} disabled={nivel <= 0}>
+            <BotonIcono etiqueta="Más pequeña" onClick={() => onZoom(zoomMenor(ajustes.zoom))} disabled={ajustes.zoom <= 1}>
               <Minus className="size-5" aria-hidden />
             </BotonIcono>
             <p aria-live="polite" className="font-medium tabular-nums">
               {ajustes.zoom === 1 ? 'Ajustada a la pantalla' : `${Math.round(ajustes.zoom * 100)} %`}
             </p>
-            <BotonIcono etiqueta="Más grande" onClick={() => onCambiar({ zoom: ZOOMS[nivel + 1] })} disabled={nivel >= ZOOMS.length - 1}>
+            <BotonIcono etiqueta="Más grande" onClick={() => onZoom(zoomMayor(ajustes.zoom))} disabled={ajustes.zoom >= ZOOM_MAXIMO}>
               <Plus className="size-5" aria-hidden />
             </BotonIcono>
           </div>
-          {ajustes.zoom > 1 && (
-            <p className="mt-2 text-sm text-(--lector-tenue)">Mueve la página con el dedo para leerla completa.</p>
-          )}
+          <p className="mt-2 text-sm text-(--lector-tenue)">
+            {tactil
+              ? ajustes.zoom > 1
+                ? 'Mueve la página con un dedo para leerla completa; junta dos dedos para achicarla.'
+                : 'También puedes agrandarla separando dos dedos sobre la página.'
+              : 'También con la tecla Ctrl y la rueda del mouse, o con las lupas junto a la página.'}
+          </p>
         </section>
 
         <section className="divide-y divide-(--lector-borde)">

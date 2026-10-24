@@ -15,7 +15,11 @@ export type Ajustes = {
   color: ColorAnotacion
 }
 
-export const ZOOMS = [1, 1.25, 1.5, 1.75, 2]
+// Pasos de los botones para agrandar o achicar; con los dedos se elige cualquier tamaño entre ellos.
+export const ZOOMS = [1, 1.25, 1.5, 2, 2.5, 3]
+export const ZOOM_MAXIMO = ZOOMS[ZOOMS.length - 1]
+export const zoomMayor = (zoom: number) => ZOOMS.find((z) => z > zoom + 0.01) ?? ZOOM_MAXIMO
+export const zoomMenor = (zoom: number) => ZOOMS.findLast((z) => z < zoom - 0.01) ?? 1
 
 export const TEMAS: Record<Tema, { nombre: string; papel: string; tinta: string; barra: string }> = {
   claro: { nombre: 'Claro', papel: '#ffffff', tinta: '#1c1917', barra: '#ffffff' },

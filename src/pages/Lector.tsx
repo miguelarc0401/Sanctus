@@ -1,14 +1,15 @@
 import '../lector/lector.css'
 import { BookOpen, Hand, X } from 'lucide-react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { Cargando } from '../components/Bloques'
-import { useAjustes, useColorDeBarra } from '../lector/ajustes'
+import { useAjustes, useColorDeBarra, ZOOM_MAXIMO, zoomMayor, zoomMenor } from '../lector/ajustes'
+import { focoEn, useAmpliar, type Foco } from '../lector/ampliar'
 import { useAnotar } from '../lector/anotar'
 import { Apariencia } from '../lector/Apariencia'
-import { BarraBusqueda, BarraInferior, BarraSeleccion, BarraSuperior } from '../lector/Barras'
+import { BarraBusqueda, BarraInferior, BarraSeleccion, BarraSuperior, BotonesZoom } from '../lector/Barras'
 import { Cuaderno, type Pestana } from '../lector/Cuaderno'
 import { Ficha } from '../lector/Ficha'
 import { PaginaPdf } from '../lector/PaginaPdf'
@@ -101,13 +102,17 @@ function useIndice(pdf: PDFDocumentProxy | null) {
 }
 
 // Tamaño del área de lectura; cambia al girar el teléfono o al cambiar el tamaño de la ventana.
+// El alto no descuenta la barra de desplazamiento de abajo: si no, al aparecer con la página agrandada,
+// la página se achicaría, la barra desaparecería y volvería a empezar.
 function useTamano(elemento: HTMLElement | null) {
   const [tamano, setTamano] = useState({ ancho: 0, alto: 0 })
   useEffect(() => {
     if (!elemento) return
-    const observador = new ResizeObserver(([entrada]) =>
-      setTamano({ ancho: Math.floor(entrada.contentRect.width), alto: Math.floor(entrada.contentRect.height) }),
-    )
+    const observador = new ResizeObserver(([entrada]) => {
+      const estilo = getComputedStyle(elemento)
+      const alto = elemento.offsetHeight - parseFloat(estilo.paddingTop) - parseFloat(estilo.paddingBottom)
+      setTamano({ ancho: Math.floor(entrada.contentRect.width), alto: Math.floor(alto) })
+    })
     observador.observe(elemento)
     return () => observador.disconnect()
   }, [elemento])
@@ -203,11 +208,8 @@ export function Lector() {
   const libroAbierto =
     ajustes.dosPaginas && ajustes.zoom === 1 && total > 2 && ajustadaAlAlto >= 280 && anchoUtil >= ajustadaAlAlto * 2 + 2
   // Página completa a la vista; en pantallas apaisadas, a lo ancho (hasta un máximo cómodo de leer).
-  const base = libroAbierto
-    ? ajustadaAlAlto
-    : ajustadaAlAlto >= anchoUtil * 0.6
-      ? Math.min(anchoUtil, ajustadaAlAlto)
-      : Math.min(anchoUtil, 760)
+  const sencilla = ajustadaAlAlto >= anchoUtil * 0.6 ? Math.min(anchoUtil, ajustadaAlAlto) : Math.min(anchoUtil, 760)
+  const base = libroAbierto ? ajustadaAlAlto : sencilla
   const ancho = Math.max(Math.floor(base * ajustes.zoom), 120)
   const actual = libroAbierto ? inicioDePar(deseada) : deseada
   const paginas = libroAbierto && actual > 1 && actual < total ? [actual, actual + 1] : [actual]
@@ -223,8 +225,31 @@ export function Lector() {
     }
   }, [pdf, actual])
 
-  // Al cambiar de página: arriba de todo y, en un momento, las vecinas ya dibujadas para pasar sin esperar.
+  // Al cambiar de página, arriba de todo; al agrandarla o achicarla, lo que estaba bajo los dedos queda en su lugar.
   const clavePaginas = paginas.join('-')
+  const enfoque = useRef<Foco | null>(null)
+  useLayoutEffect(() => {
+    const foco = enfoque.current
+    enfoque.current = null
+    if (!area) return
+    if (hojas.current) {
+      hojas.current.style.transition = 'none'
+      hojas.current.style.transform = ''
+    }
+    const pagina = foco && area.querySelector<HTMLElement>(`[data-pagina="${foco.pagina}"]`)
+    if (!foco || !pagina) {
+      area.scrollTo({ top: 0, left: 0 })
+      return
+    }
+    const caja = pagina.getBoundingClientRect()
+    area.scrollBy({
+      left: caja.left + foco.fx * caja.width - foco.x,
+      top: caja.top + foco.fy * caja.height - foco.y,
+      behavior: 'instant',
+    })
+  }, [area, clavePaginas, ancho, pdf])
+
+  // En un momento, las vecinas ya dibujadas para pasar sin esperar.
   const precargarVecinas = useEffectEvent(() => {
     if (!pdf || !espacio.ancho) return
     const vecinas = [ultimaVisible + 1, ultimaVisible + 2, paginas[0] - 1, paginas[0] - 2]
@@ -234,10 +259,33 @@ export function Lector() {
     }
   })
   useEffect(() => {
-    area?.scrollTo({ top: 0, left: 0 })
     const espera = window.setTimeout(precargarVecinas, 350)
     return () => window.clearTimeout(espera)
-  }, [area, clavePaginas, ancho, pdf])
+  }, [clavePaginas, ancho, pdf])
+
+  // ─── Agrandar y achicar ──────────────────────────────────────────────────
+  // Devuelve si cambió el tamaño. Desde el libro abierto, queda a la vista la página que se agrandó.
+  function cambiarZoom(zoom: number, foco: Foco | null) {
+    const nuevo = zoom < 1.05 ? 1 : Math.round(Math.min(zoom, ZOOM_MAXIMO) * 100) / 100
+    if (Math.abs(nuevo - ajustes.zoom) < 0.02) return false
+    enfoque.current = foco
+    if (libroAbierto && foco) setElegida(foco.pagina)
+    setDireccion(null)
+    cambiarAjustes({ zoom: nuevo })
+    return true
+  }
+  // Con los botones o el teclado, se agranda desde el centro de la pantalla.
+  function zoomDesdeElCentro(zoom: number) {
+    const caja = area?.getBoundingClientRect()
+    const foco = caja && hojas.current ? focoEn(hojas.current, caja.left + caja.width / 2, caja.top + caja.height / 2) : null
+    cambiarZoom(zoom, foco)
+  }
+  useAmpliar(
+    area,
+    hojas,
+    (escala) => limitar(escala, (Math.min(ancho, sencilla) / ancho) * 0.7, (sencilla * ZOOM_MAXIMO) / ancho),
+    (escala, foco) => cambiarZoom((ancho * escala) / sencilla, foco),
+  )
 
   // Recuerda la página después de un momento sin cambiarla.
   useEffect(() => {
@@ -268,6 +316,21 @@ export function Lector() {
   // ─── Teclado, selección y gestos ─────────────────────────────────────────
   const alTeclear = useEffectEvent((e: KeyboardEvent) => {
     if (ventana || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+    // Ctrl y + / - / 0 agrandan sólo la página, no toda la pantalla.
+    const zoom = !(e.ctrlKey || e.metaKey)
+      ? null
+      : e.key === '+' || e.key === '='
+        ? zoomMayor(ajustes.zoom)
+        : e.key === '-'
+          ? zoomMenor(ajustes.zoom)
+          : e.key === '0'
+            ? 1
+            : null
+    if (zoom !== null) {
+      e.preventDefault()
+      zoomDesdeElCentro(zoom)
+      return
+    }
     if (e.key === 'ArrowRight' || e.key === 'PageDown') siguiente()
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') anterior()
     if (e.key === 'Escape') limpiarSeleccion()
@@ -442,6 +505,7 @@ export function Lector() {
   const notas = anotaciones.filter((a) => a.tipo !== 'marcador')
   const capitulo = indice?.findLast((e) => e.pagina <= actual)?.titulo
   const listo = pdf && espacio.ancho > 0 && progreso !== undefined
+  const conConsejo = !!listo && !consejoOculto && !seleccion && !ventana && barras && paginas.some((n) => sinTexto[n] === false)
   const animacion =
     direccion === 'adelante' ? 'animate-[pasar-adelante_.28s_ease-out]' : direccion === 'atras' ? 'animate-[pasar-atras_.28s_ease-out]' : ''
 
@@ -456,7 +520,8 @@ export function Lector() {
       <main
         ref={setArea}
         className="absolute inset-0 overflow-auto overscroll-contain pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(6.25rem+env(safe-area-inset-bottom))] [scrollbar-gutter:stable]"
-        style={{ touchAction: ampliada ? 'auto' : 'pan-y pinch-zoom' }}
+        // Sin pinch-zoom: el gesto de dos dedos agranda la página (useAmpliar), no toda la pantalla.
+        style={{ touchAction: ampliada ? 'pan-x pan-y' : 'pan-y' }}
         onPointerDown={(e) => {
           puntero.current = { tipo: e.pointerType, conSeleccion: !document.getSelection()?.isCollapsed }
         }}
@@ -560,7 +625,17 @@ export function Lector() {
         </p>
       )}
 
-      {listo && !consejoOculto && !seleccion && !ventana && barras && paginas.some((n) => sinTexto[n] === false) && (
+      {listo && (
+        <BotonesZoom
+          visible={barras && !seleccion && !conConsejo}
+          zoom={ajustes.zoom}
+          onAgrandar={() => zoomDesdeElCentro(zoomMayor(ajustes.zoom))}
+          onAchicar={() => zoomDesdeElCentro(zoomMenor(ajustes.zoom))}
+          onAjustar={() => zoomDesdeElCentro(1)}
+        />
+      )}
+
+      {conConsejo && (
         <Consejo
           onCerrar={() => {
             setConsejoOculto(true)
@@ -625,7 +700,13 @@ export function Lector() {
       )}
 
       {ventana?.tipo === 'apariencia' && (
-        <Apariencia ajustes={ajustes} onCambiar={cambiarAjustes} puedeDosPaginas={puedeDosPaginas} onCerrar={() => setVentana(null)} />
+        <Apariencia
+          ajustes={ajustes}
+          onCambiar={cambiarAjustes}
+          onZoom={zoomDesdeElCentro}
+          puedeDosPaginas={puedeDosPaginas}
+          onCerrar={() => setVentana(null)}
+        />
       )}
     </div>
   )

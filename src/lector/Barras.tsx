@@ -10,9 +10,12 @@ import {
   Quote,
   Search,
   X,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
 import { COLORES, type ColorAnotacion } from '../lib/libros'
+import { ZOOM_MAXIMO } from './ajustes'
 import { BotonIcono } from './Piezas'
 
 const ocultable = (visible: boolean, hacia: 'arriba' | 'abajo') =>
@@ -166,6 +169,47 @@ export function BarraInferior({
         </BotonIcono>
       </div>
     </nav>
+  )
+}
+
+// Lupas para agrandar o achicar la página; con la página agrandada, el porcentaje la vuelve a ajustar a la pantalla.
+export function BotonesZoom({
+  visible,
+  zoom,
+  onAgrandar,
+  onAchicar,
+  onAjustar,
+}: {
+  visible: boolean
+  zoom: number
+  onAgrandar: () => void
+  onAchicar: () => void
+  onAjustar: () => void
+}) {
+  const porcentaje = `${Math.round(zoom * 100)} %`
+  return (
+    <div
+      role="group"
+      aria-label="Tamaño de la página"
+      className={`fixed right-3 bottom-[calc(6.75rem+env(safe-area-inset-bottom))] z-10 flex flex-col items-center rounded-full bg-(--lector-barra) shadow-lg ring-1 ring-(--lector-borde) backdrop-blur-md transition duration-300 ease-out ${visible ? '' : 'pointer-events-none translate-x-[calc(100%+1rem)] opacity-0'}`}
+    >
+      <BotonIcono etiqueta="Ver la página más grande" onClick={onAgrandar} disabled={zoom >= ZOOM_MAXIMO}>
+        <ZoomIn className="size-5" aria-hidden />
+      </BotonIcono>
+      {zoom > 1 && (
+        <button
+          onClick={onAjustar}
+          aria-label={`${porcentaje}. Ajustar la página a la pantalla`}
+          title="Ajustar a la pantalla"
+          className="w-11 rounded-full py-1 text-xs font-semibold text-(--lector-acento) tabular-nums hover:bg-(--lector-suave) focus-visible:ring-2 focus-visible:ring-(--lector-acento) focus-visible:outline-none"
+        >
+          {porcentaje}
+        </button>
+      )}
+      <BotonIcono etiqueta="Ver la página más pequeña" onClick={onAchicar} disabled={zoom <= 1}>
+        <ZoomOut className="size-5" aria-hidden />
+      </BotonIcono>
+    </div>
   )
 }
 
