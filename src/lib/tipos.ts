@@ -52,6 +52,8 @@ export type Miembro = {
   nombre: string
   acceso: string | null
   es_admin: boolean
+  // Quien instaló la app: nadie más puede quitarle el permiso ni tocar su cuenta.
+  es_principal: boolean
   debe_cambiar_contrasena: boolean
   estado: EstadoCuenta
   grupo_solicitado: number | null

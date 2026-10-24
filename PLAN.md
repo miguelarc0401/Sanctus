@@ -2,7 +2,7 @@
 
 ## 1. Qué es
 
-Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos, niños, etc. Cada grupo lleva el nombre de un santo. Un único administrador gestiona todo; los miembros consultan y participan.
+Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos, niños, etc. Cada grupo lleva el nombre de un santo. Los administradores gestionan todo; los miembros consultan y participan.
 
 ## 2. Decisiones tomadas
 
@@ -12,7 +12,7 @@ Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos,
 | Votación de temas | Por encuesta. Cada encuesta nueva empieza de cero: un voto por persona en cada encuesta. |
 | Preguntas al administrador | Con nombre. Sólo las ven quien pregunta y el administrador. |
 | Alta de miembros | Cada quien se registra desde la app y el administrador aprueba la solicitud (y asigna grupos). Mientras tanto, la cuenta no ve nada. El administrador también puede crear cuentas, cambiar usuario, desactivarlas o eliminarlas. |
-| Administradores | Uno solo. |
+| Administradores | Puede haber varios y todos pueden hacer lo mismo (también nombrar o quitar a otros). El administrador principal, quien instaló la app, no puede perder el permiso, y nadie más puede desactivar, borrar ni cambiar su cuenta. |
 | Formato de los libros | Mayormente PDF; también Word o sólo imágenes. |
 | Santos | Catálogo editable por el administrador (empezó con 24 santos). Al crear un grupo se elige su santo. |
 | Cuentas de niños | A nombre de los niños, sin importar la edad. Entran con un usuario (no necesitan correo). |

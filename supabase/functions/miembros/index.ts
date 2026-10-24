@@ -1,4 +1,4 @@
-// Alta, cambio de usuario o contraseña y baja de miembros. Sólo la puede usar el administrador.
+// Alta, cambio de usuario o contraseña y baja de miembros. Sólo la pueden usar los administradores.
 // Necesita la clave secreta de Supabase, por eso vive aquí y no en el navegador.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -47,9 +47,15 @@ Deno.serve(async (req) => {
     .select('es_admin')
     .eq('id', sesion.user.id)
     .maybeSingle()
-  if (!perfil?.es_admin) return responder({ error: 'Sólo el administrador puede hacer esto.' }, 403)
+  if (!perfil?.es_admin) return responder({ error: 'Sólo un administrador puede hacer esto.' }, 403)
 
   const peticion = (await req.json()) as Peticion
+
+  // La cuenta del administrador principal sólo la puede cambiar esa persona.
+  if (peticion.accion !== 'crear' && peticion.id !== sesion.user.id) {
+    const { data: destino } = await supabase.from('perfiles').select('es_principal').eq('id', peticion.id).maybeSingle()
+    if (destino?.es_principal) return responder({ error: 'La cuenta del administrador principal no se puede cambiar.' }, 403)
+  }
 
   if (peticion.accion === 'crear') {
     const nombre = peticion.nombre?.trim()

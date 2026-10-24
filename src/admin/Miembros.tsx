@@ -221,8 +221,11 @@ function FormMiembro({
   const [nombre, setNombre] = useState(miembro.nombre)
   const [acceso, setAcceso] = useState(miembro.acceso ?? '')
   const [activa, setActiva] = useState(miembro.estado === 'aprobado')
+  const [admin, setAdmin] = useState(miembro.es_admin)
   const [elegidos, setElegidos] = useState(actuales)
   const { guardando, error, enviar } = useEnvio()
+  // Una cuenta desactivada no puede ser administradora.
+  const adminNuevo = activa && admin
 
   async function guardar() {
     if (nombre.trim() !== miembro.nombre) await guardarFila('perfiles', miembro.id, { nombre: nombre.trim() })
@@ -233,6 +236,11 @@ function FormMiembro({
         usuario: miembro.id,
         nuevo: activa ? 'aprobado' : 'suspendido',
       })
+      if (error) throw error
+    }
+    // Al desactivar la cuenta, la base de datos ya le quita lo de administrador.
+    if (activa && adminNuevo !== miembro.es_admin) {
+      const { error } = await supabase.rpc('cambiar_admin', { usuario: miembro.id, hacer: adminNuevo })
       if (error) throw error
     }
     const agregar = elegidos.filter((id) => !actuales.includes(id))
@@ -255,6 +263,13 @@ function FormMiembro({
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault()
+        if (
+          adminNuevo &&
+          !miembro.es_admin &&
+          !confirm(`¿Hacer administrador a ${miembro.nombre}? Podrá ver y cambiar todo en la app, igual que tú.`)
+        ) {
+          return
+        }
         void enviar(guardar)
       }}
     >
@@ -279,6 +294,13 @@ function FormMiembro({
             etiqueta="Cuenta activa (si la desactivas, no podrá ver nada hasta que la reactives)"
             checked={activa}
             onChange={(e) => setActiva(e.target.checked)}
+          />
+          <Casilla
+            id="admin"
+            etiqueta="Administrador (puede usar todo el panel, igual que tú)"
+            checked={adminNuevo}
+            disabled={!activa}
+            onChange={(e) => setAdmin(e.target.checked)}
           />
           <div className="rounded-2xl bg-white p-4 ring-1 ring-stone-200">
             <p className="font-medium text-stone-800">¿Olvidó su contraseña?</p>
@@ -400,7 +422,7 @@ export function Miembros() {
         supabase
           .from('perfiles')
           .select(
-            'id, nombre, acceso, es_admin, debe_cambiar_contrasena, estado, grupo_solicitado, nota_registro, creado_en, miembros(grupo_id)',
+            'id, nombre, acceso, es_admin, es_principal, debe_cambiar_contrasena, estado, grupo_solicitado, nota_registro, creado_en, miembros(grupo_id)',
           )
           .order('nombre'),
       ),
@@ -460,7 +482,9 @@ export function Miembros() {
                       {miembro.nombre}
                     </span>
                     {miembro.es_admin && (
-                      <span className="rounded-full bg-cielo-100 px-2 py-0.5 text-xs font-medium text-cielo-800">Admin</span>
+                      <span className="rounded-full bg-cielo-100 px-2 py-0.5 text-xs font-medium text-cielo-800">
+                        {miembro.es_principal ? 'Admin principal' : 'Admin'}
+                      </span>
                     )}
                     {miembro.estado === 'suspendido' && (
                       <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-600">
@@ -512,7 +536,17 @@ export function Miembros() {
               }}
             />
           )}
-          {ventana.tipo === 'editar' && (
+          {ventana.tipo === 'editar' && ventana.miembro.es_principal && ventana.miembro.id !== perfil?.id ? (
+            <div className="space-y-4">
+              <p className="text-stone-700">
+                {ventana.miembro.nombre} es el administrador principal de la app. Nadie más puede cambiar su cuenta,
+                quitarle el permiso de administrador ni desactivarla.
+              </p>
+              <div className="flex justify-end">
+                <Boton onClick={() => setVentana(null)}>Entendido</Boton>
+              </div>
+            </div>
+          ) : ventana.tipo === 'editar' && (
             <FormMiembro
               miembro={ventana.miembro}
               grupos={grupos}
