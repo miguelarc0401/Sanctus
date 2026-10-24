@@ -64,7 +64,8 @@ virtudes        id, semana (lunes), grupo_id (vacío = todos), virtud, explicaci
 libros          id, titulo, autor, descripcion, portada, archivo, num_paginas
 libros_grupos   libro_id, grupo_id
 anotaciones     id, usuario_id, libro_id, pagina, tipo, texto, posicion, nota, color
-                  tipo: subrayado | nota | frase
+                  tipo: subrayado | nota | frase | marcador
+                  color: amarillo | verde | rosa | azul (sólo subrayados)
 progreso        usuario_id, libro_id, ultima_pagina
 encuestas       id, grupo_id, titulo, fase, tema_ganador_id
                   fase: propuestas | votacion | cerrada
@@ -98,12 +99,17 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 
 **Lectura:**
 - Visor propio con PDF.js, página por página, sin botón de descargar ni de imprimir y sin menú contextual.
-- El archivo se pide con un enlace firmado que caduca en minutos.
+- El archivo se pide con un enlace firmado que caduca en minutos. Mientras se descarga se ve la portada con el porcentaje; el último libro abierto se queda en memoria (nunca en disco) para no descargarlo otra vez al volver.
 - Sin marca de agua (se quitó a pedido del administrador).
-- Recuerda la última página leída.
+- Recuerda la última página leída; la biblioteca muestra «Seguir leyendo» con el último libro.
+- Se pasa de página con botones, flechas del teclado, deslizando el dedo o con el deslizador de abajo (que muestra el capítulo). Las páginas vecinas se dibujan por adelantado.
+- Fondos Claro, Sepia y Noche; tamaño de la página; en pantallas anchas, dos páginas como libro abierto; tocar la página esconde las barras. Las preferencias se guardan en cada teléfono.
+- «Cuaderno»: índice del PDF (si lo trae), páginas marcadas, ir a una página, todas mis notas del libro con filtros y búsqueda en el texto del libro (sin importar acentos), que queda resaltada en la página.
 
 **Anotaciones (privadas):**
-- Subrayar texto, poner una nota a un fragmento o a una página, y guardar frases («rescatar») en «Mis frases».
+- Subrayar texto en cuatro colores con un toque, poner una nota a un fragmento o a una página, y guardar frases («rescatar») en «Mis frases».
+- Tocar un subrayado abre su tarjeta: cambiar color, volverlo frase, escribir la nota (se guarda también al cerrar) o borrarlo con opción de deshacer.
+- En la página se ven las notas al margen, los papelitos de las notas de página y una cinta dorada en las páginas marcadas.
 - Las páginas escaneadas son imágenes, sin texto seleccionable: en ellas sólo se permiten notas por página y marcadores.
 
 **Límite:** todo esto dificulta la descarga, pero no la impide; una captura de pantalla siempre es posible.
@@ -129,6 +135,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 | 2. Participación ✅ | Preguntas privadas, encuestas de temas, temario de charlas. |
 | 3. Biblioteca ✅ | Subida de libros, lector protegido, anotaciones privadas. |
 | 4. Extras ✅ | Notificaciones push, añadir eventos al calendario del teléfono y búsqueda en mis notas. La conversión automática de Word se descartó: necesita un servicio externo de pago y guardar como PDF desde Word basta. |
+| 5. Lector renovado ✅ | Subrayado en colores, tarjeta para editar, notas al margen, cinta de marcador, fondos Claro/Sepia/Noche, libro abierto en pantallas anchas, gestos, cuaderno con índice, notas y búsqueda en el libro, y biblioteca con «Seguir leyendo». |
 
 Las notificaciones push en iPhone sólo funcionan si la app está instalada en la pantalla de inicio (iOS 16.4 o posterior).
 

@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { olvidarLibroAbierto } from '../lib/libros'
 import { desactivarNotificaciones } from '../lib/notificaciones'
 import { supabase } from '../lib/supabase'
 import { AuthContext, type Perfil } from './contexto'
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPerfilDe(null)
     // Que la siguiente persona que entre en este teléfono no vea datos de la anterior.
     clienteConsultas.clear()
+    olvidarLibroAbierto()
   }, [clienteConsultas])
 
   const cargando = !sesionLista || (usuarioId !== undefined && perfilDe !== usuarioId)

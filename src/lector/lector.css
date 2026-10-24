@@ -1,0 +1,313 @@
+/* Capa de texto seleccionable sobre cada página del PDF.
+   Adaptado de pdfjs-dist/web/pdf_viewer.css (Mozilla, licencia Apache 2.0). */
+.textLayer {
+  color-scheme: only light;
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 2;
+
+  :is(span, br) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+    user-select: text;
+  }
+
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+
+  > :not(.markedContent),
+  .markedContent span:not(.markedContent) {
+    z-index: 1;
+    --font-height: 0;
+    font-size: calc(var(--text-scale-factor) * var(--font-height));
+    --scale-x: 1;
+    --rotate: 0deg;
+    transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+  }
+
+  .markedContent {
+    display: contents;
+  }
+
+  ::selection {
+    background: rgb(59 100 179 / 0.3);
+    color: transparent;
+  }
+
+  br::selection {
+    background: transparent;
+  }
+
+  .endOfContent {
+    display: block;
+    position: absolute;
+    inset: 100% 0 0;
+    z-index: 0;
+    cursor: default;
+    user-select: none;
+  }
+
+  &.selecting .endOfContent {
+    top: 0;
+  }
+}
+
+/* ─── Fondos de lectura ─────────────────────────────────────────────────────── */
+
+.lector {
+  --lector-fondo: #e7e5e4;
+  --lector-barra: rgb(255 255 255 / 0.9);
+  --lector-hoja: #ffffff;
+  --lector-suave: #f2f1ef;
+  --lector-tinta: #1c1917;
+  --lector-tenue: #6b6560;
+  --lector-borde: rgb(28 25 23 / 0.1);
+  --lector-acento: var(--color-cielo-700);
+  --lector-papel: #ffffff;
+  --lector-filtro: none;
+  --lector-mezcla: multiply;
+  background: var(--lector-fondo);
+  color: var(--lector-tinta);
+  -webkit-touch-callout: none;
+
+  /* En las notas propias sí se puede pegar texto. */
+  :is(input, textarea) {
+    -webkit-touch-callout: default;
+  }
+}
+
+.lector[data-tema='sepia'] {
+  --lector-fondo: #ddcfae;
+  --lector-barra: rgb(248 241 227 / 0.92);
+  --lector-hoja: #f8f1e3;
+  --lector-suave: #eee3cb;
+  --lector-tinta: #3b2f20;
+  --lector-tenue: #73614a;
+  --lector-borde: rgb(80 60 20 / 0.15);
+  --lector-acento: #8a5a12;
+  --lector-papel: #f4ead5;
+  --lector-filtro: sepia(0.25);
+
+  /* Tiñe el blanco de la página como papel antiguo; la letra sigue oscura. */
+  .pagina::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: #f1e2c2;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+}
+
+/* De noche la página se invierte: fondo oscuro y letra clara. */
+.lector[data-tema='noche'] {
+  --lector-fondo: #0e0d0c;
+  --lector-barra: rgb(28 26 23 / 0.92);
+  --lector-hoja: #1c1a17;
+  --lector-suave: #2a2724;
+  --lector-tinta: #e7e5e4;
+  --lector-tenue: #a8a29e;
+  --lector-borde: rgb(255 255 255 / 0.1);
+  --lector-acento: #e3c164;
+  --lector-papel: #1f1d1a;
+  --lector-filtro: invert(0.88) hue-rotate(180deg);
+  --lector-mezcla: screen;
+  color-scheme: dark;
+
+  .textLayer ::selection {
+    background: rgb(147 197 253 / 0.35);
+  }
+}
+
+/* ─── La página ─────────────────────────────────────────────────────────────── */
+
+.lector .pagina {
+  background: var(--lector-papel);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.1),
+    0 12px 32px -12px rgb(0 0 0 / 0.35);
+}
+
+.lector .lienzo {
+  filter: var(--lector-filtro);
+}
+
+.lector .marca {
+  mix-blend-mode: var(--lector-mezcla);
+  outline: 3px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Las frases guardadas: un toque de oro con la línea debajo. */
+.lector .marca-frase {
+  background: rgb(217 180 74 / 0.3);
+  box-shadow: inset 0 -2px 0 #c49a2c;
+}
+
+/* Al llegar desde «Mis notas», el fragmento parpadea para encontrarlo. */
+.lector .destello {
+  animation: destello 0.8s ease-in-out 3;
+}
+
+@keyframes destello {
+  50% {
+    outline-color: rgb(196 154 44 / 0.75);
+  }
+}
+
+/* La cinta que marca la página. */
+.lector .cinta {
+  background: linear-gradient(90deg, #a87d18, #e0bd57 45%, #a87d18);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  animation: caer-cinta 0.35s ease-out;
+}
+
+@keyframes caer-cinta {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+.lector .nota-pagina {
+  transform: rotate(-4deg);
+}
+
+/* Sombra del lomo cuando se ven dos páginas, como un libro abierto. */
+.lector .lomo {
+  width: 7%;
+}
+
+.lector .lomo-izquierda {
+  right: 0;
+  background: linear-gradient(to left, rgb(0 0 0 / 0.14), transparent);
+}
+
+.lector .lomo-derecha {
+  left: 0;
+  background: linear-gradient(to right, rgb(0 0 0 / 0.14), transparent);
+}
+
+/* Lo buscado, resaltado en la página. */
+::highlight(busqueda) {
+  background-color: rgb(250 204 21 / 0.55);
+  color: transparent;
+}
+
+/* ─── Deslizador de páginas ─────────────────────────────────────────────────── */
+
+.deslizador {
+  appearance: none;
+  height: 1.75rem;
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(to right, var(--color-oro-500) var(--avance), var(--lector-borde) var(--avance));
+  }
+
+  &::-moz-range-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(to right, var(--color-oro-500) var(--avance), var(--lector-borde) var(--avance));
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    margin-top: -8px;
+    border-radius: 50%;
+    background: var(--lector-hoja);
+    border: 2px solid var(--color-oro-500);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--lector-hoja);
+    border: 2px solid var(--color-oro-500);
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      box-shadow: 0 0 0 5px rgb(196 154 44 / 0.35);
+    }
+  }
+}
+
+/* ─── Movimientos ───────────────────────────────────────────────────────────── */
+
+@keyframes subir {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes entrar-derecha {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pasar-adelante {
+  from {
+    opacity: 0.3;
+    transform: translateX(56px);
+  }
+}
+
+@keyframes pasar-atras {
+  from {
+    opacity: 0.3;
+    transform: translateX(-56px);
+  }
+}
+
+@keyframes respirar {
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lector *,
+  .lector *::before {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Los libros no se imprimen. */
+@media print {
+  .lector-protegido {
+    display: none !important;
+  }
+}

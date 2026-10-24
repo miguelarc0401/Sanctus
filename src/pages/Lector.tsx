@@ -1,47 +1,51 @@
-import '../lector.css'
-import { useQueryClient } from '@tanstack/react-query'
-import {
-  ArrowLeft,
-  Bookmark,
-  BookmarkCheck,
-  ChevronLeft,
-  ChevronRight,
-  Highlighter,
-  MessageSquarePlus,
-  NotebookText,
-  Quote,
-  StickyNote,
-  Trash2,
-  X,
-} from 'lucide-react'
-import { TextLayer, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import '../lector/lector.css'
+import { BookOpen, Hand, X } from 'lucide-react'
+import type { PDFDocumentProxy } from 'pdfjs-dist'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
-import { Cargando, Vacio } from '../components/Bloques'
-import { AreaTexto, Boton, Campo, MensajeError } from '../components/Formulario'
-import { Hoja } from '../components/Hoja'
+import { useQueryClient } from '@tanstack/react-query'
+import { Cargando } from '../components/Bloques'
+import { useAjustes, useColorDeBarra } from '../lector/ajustes'
+import { useAnotar } from '../lector/anotar'
+import { Apariencia } from '../lector/Apariencia'
+import { BarraBusqueda, BarraInferior, BarraSeleccion, BarraSuperior } from '../lector/Barras'
+import { Cuaderno, type Pestana } from '../lector/Cuaderno'
+import { Ficha } from '../lector/Ficha'
+import { PaginaPdf } from '../lector/PaginaPdf'
+import { dibujarPagina, leerIndice, proporcionDe, textoDePagina, type EntradaIndice } from '../lector/paginas'
+import { MensajeAviso, type Aviso } from '../lector/Piezas'
+import { rectangulosDe } from '../lector/seleccion'
+import { useBusqueda } from '../lector/useBusqueda'
 import {
   descargarLibro,
-  ICONOS_ANOTACION,
+  urlPortada,
   useAnotaciones,
   useLibro,
   useProgreso,
   type Anotacion,
+  type ColorAnotacion,
   type Rect,
   type TipoAnotacion,
 } from '../lib/libros'
 import { abrirPdf } from '../lib/pdf'
 import { supabase } from '../lib/supabase'
-import { useEnvio } from '../lib/useEnvio'
 
-type Seleccion = { texto: string; rects: Rect[] }
+type Seleccion = { pagina: number; texto: string; rects: Rect[] }
 
-const COLORES: Partial<Record<TipoAnotacion, string>> = {
-  subrayado: 'bg-yellow-300/50',
-  frase: 'bg-sky-300/45',
-}
+type Ventana =
+  // id null: una nota nueva para la página.
+  | { tipo: 'ficha'; id: number | null; pagina: number; enfocar: boolean }
+  | { tipo: 'cuaderno' }
+  | { tipo: 'apariencia' }
 
 const CLAVE_CONSEJO = 'consejo-subrayar-oculto'
+
+const BORRADA: Record<TipoAnotacion, string> = {
+  subrayado: 'Se borró el subrayado',
+  frase: 'Se borró la frase',
+  nota: 'Se borró la nota',
+  marcador: 'Se quitó la cinta',
+}
 
 function leerConsejoOculto() {
   try {
@@ -51,272 +55,108 @@ function leerConsejoOculto() {
   }
 }
 
-// Explica cómo subrayar hasta que la persona lo cierre.
-function ConsejoSubrayar() {
-  const [oculto, setOculto] = useState(leerConsejoOculto)
-  if (oculto) return null
+const enTelefono = () => !window.matchMedia('(min-width: 640px)').matches
+const limitar = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
+// En el libro abierto, la página de la izquierda es par (la 1, la portada, va sola).
+const inicioDePar = (n: number) => (n <= 1 ? 1 : n % 2 === 0 ? n : n - 1)
+
+// Descarga el libro (sólo si la persona puede leerlo) y lo abre.
+function useLibroAbierto(archivo: string | undefined) {
+  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
+  const [avance, setAvance] = useState(0)
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    if (!archivo) return
+    let vigente = true
+    let cerrar: (() => Promise<void>) | undefined
+    descargarLibro(archivo, (fraccion) => vigente && setAvance(fraccion))
+      .then(abrirPdf)
+      .then((abierto) => {
+        cerrar = abierto.cerrar
+        if (vigente) setPdf(abierto.pdf)
+        else void abierto.cerrar()
+      })
+      .catch(() => vigente && setError(true))
+    return () => {
+      vigente = false
+      void cerrar?.()
+    }
+  }, [archivo])
+  return { pdf, avance, error }
+}
+
+function useIndice(pdf: PDFDocumentProxy | null) {
+  const [indice, setIndice] = useState<EntradaIndice[] | null>(null)
+  useEffect(() => {
+    if (!pdf) return
+    let vigente = true
+    leerIndice(pdf)
+      .then((entradas) => vigente && setIndice(entradas))
+      .catch(() => vigente && setIndice([]))
+    return () => {
+      vigente = false
+    }
+  }, [pdf])
+  return indice
+}
+
+// Tamaño del área de lectura; cambia al girar el teléfono o al cambiar el tamaño de la ventana.
+function useTamano(elemento: HTMLElement | null) {
+  const [tamano, setTamano] = useState({ ancho: 0, alto: 0 })
+  useEffect(() => {
+    if (!elemento) return
+    const observador = new ResizeObserver(([entrada]) =>
+      setTamano({ ancho: Math.floor(entrada.contentRect.width), alto: Math.floor(entrada.contentRect.height) }),
+    )
+    observador.observe(elemento)
+    return () => observador.disconnect()
+  }, [elemento])
+  return tamano
+}
+
+function Apertura({ titulo, portada, avance }: { titulo: string; portada: string | null; avance: number }) {
   return (
-    <div className="relative mx-auto mb-3 max-w-xl rounded-xl bg-cielo-50 py-3 pr-10 pl-4 text-sm text-cielo-900 ring-1 ring-cielo-100">
-      <p>
-        <strong>Para subrayar:</strong> mantén presionado el texto (o selecciónalo con el mouse) y elige{' '}
-        <strong>Subrayar</strong>, <strong>Nota</strong> o <strong>Frase</strong>. Tus subrayados y notas sólo los ves tú.
+    <div className="flex flex-col items-center gap-5 px-6 text-center">
+      {portada ? (
+        <img
+          src={portada}
+          alt=""
+          className="w-36 animate-[respirar_2.4s_ease-in-out_infinite] rounded-l-sm rounded-r-lg shadow-2xl ring-1 ring-black/10"
+        />
+      ) : (
+        <BookOpen className="size-16 animate-[respirar_2.4s_ease-in-out_infinite] text-(--lector-acento)" aria-hidden />
+      )}
+      <p className="max-w-xs font-serif text-2xl leading-tight font-semibold">{titulo}</p>
+      <div className="w-52">
+        <div className="h-1.5 overflow-hidden rounded-full bg-(--lector-borde)">
+          <div
+            className={`h-full rounded-full bg-oro-500 transition-[width] duration-300 ${avance ? '' : 'w-1/3 animate-pulse'}`}
+            style={avance ? { width: `${Math.max(avance * 100, 4)}%` } : undefined}
+          />
+        </div>
+        <p className="mt-2 text-sm text-(--lector-tenue)" aria-live="polite">
+          Abriendo el libro…{avance > 0 && ` ${Math.round(avance * 100)} %`}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// Explica cómo subrayar hasta que la persona lo cierre.
+function Consejo({ onCerrar }: { onCerrar: () => void }) {
+  return (
+    <div className="fixed inset-x-3 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-sm animate-[aparecer_.3s_ease-out] items-start gap-3 rounded-2xl bg-cielo-800 p-4 text-sm text-white shadow-xl">
+      <Hand className="mt-0.5 size-5 shrink-0 text-oro-400" aria-hidden />
+      <p className="flex-1">
+        <strong>Mantén presionado el texto</strong> (o selecciónalo con el mouse) para subrayarlo con un color, escribirle una
+        nota o guardarlo en tus frases. Sólo tú lo ves.
       </p>
-      <button
-        onClick={() => {
-          setOculto(true)
-          try {
-            localStorage.setItem(CLAVE_CONSEJO, '1')
-          } catch {
-            // Sin almacenamiento sólo se oculta mientras el libro esté abierto.
-          }
-        }}
-        aria-label="Entendido"
-        className="absolute top-2 right-2 rounded-full p-1 text-cielo-600 hover:bg-cielo-100"
-      >
+      <button onClick={onCerrar} aria-label="Entendido" className="-m-1 rounded-full p-1.5 text-cielo-100 hover:bg-white/10">
         <X className="size-4" />
       </button>
     </div>
   )
 }
-
-function PaginaPdf({
-  pdf,
-  numero,
-  ancho,
-  anotaciones,
-  onSeleccion,
-  onTocarAnotacion,
-  onSinTexto,
-}: {
-  pdf: PDFDocumentProxy
-  numero: number
-  ancho: number
-  anotaciones: Anotacion[]
-  onSeleccion: (s: Seleccion | null) => void
-  onTocarAnotacion: (a: Anotacion) => void
-  onSinTexto: (sinTexto: boolean) => void
-}) {
-  const marco = useRef<HTMLDivElement>(null)
-  const lienzo = useRef<HTMLCanvasElement>(null)
-  const capa = useRef<HTMLDivElement>(null)
-  const [alto, setAlto] = useState(0)
-
-  // Dibuja la página y, encima, su texto invisible para poder seleccionarlo.
-  useEffect(() => {
-    let cancelado = false
-    let dibujo: RenderTask | undefined
-    let textos: TextLayer | undefined
-    void (async () => {
-      const pagina = await pdf.getPage(numero)
-      if (cancelado) return
-      const escala = ancho / pagina.getViewport({ scale: 1 }).width
-      const viewport = pagina.getViewport({ scale: escala })
-      const densidad = window.devicePixelRatio || 1
-      const canvas = lienzo.current!
-      canvas.width = Math.floor(viewport.width * densidad)
-      canvas.height = Math.floor(viewport.height * densidad)
-      setAlto(viewport.height)
-      dibujo = pagina.render({
-        canvas,
-        viewport,
-        transform: densidad === 1 ? undefined : [densidad, 0, 0, densidad, 0, 0],
-      })
-      await dibujo.promise
-      const contenido = await pagina.getTextContent()
-      if (cancelado) return
-      onSinTexto(contenido.items.length === 0)
-      const contenedor = capa.current!
-      contenedor.replaceChildren()
-      contenedor.style.setProperty('--total-scale-factor', String(escala))
-      textos = new TextLayer({ textContentSource: contenido, container: contenedor, viewport })
-      await textos.render()
-    })().catch((e: { name?: string }) => {
-      if (!cancelado && e?.name !== 'RenderingCancelledException') console.error(e)
-    })
-    return () => {
-      cancelado = true
-      dibujo?.cancel()
-      textos?.cancel()
-    }
-  }, [pdf, numero, ancho, onSinTexto])
-
-  // Avisa qué texto de esta página está seleccionado, con su posición en proporción de la página.
-  useEffect(() => {
-    let espera: number | undefined
-    const alCambiar = () => {
-      window.clearTimeout(espera)
-      espera = window.setTimeout(() => {
-        const seleccion = document.getSelection()
-        const texto = seleccion?.toString().trim() ?? ''
-        if (!seleccion || seleccion.isCollapsed || !texto || !capa.current?.contains(seleccion.anchorNode)) {
-          onSeleccion(null)
-          return
-        }
-        const caja = marco.current!.getBoundingClientRect()
-        const rects = [...seleccion.getRangeAt(0).getClientRects()]
-          .filter((r) => r.width > 1 && r.height > 1)
-          .map((r) => ({
-            x: (r.left - caja.left) / caja.width,
-            y: (r.top - caja.top) / caja.height,
-            w: r.width / caja.width,
-            h: r.height / caja.height,
-          }))
-        onSeleccion({ texto, rects })
-      }, 250)
-    }
-    document.addEventListener('selectionchange', alCambiar)
-    return () => {
-      window.clearTimeout(espera)
-      document.removeEventListener('selectionchange', alCambiar)
-    }
-  }, [onSeleccion])
-
-  // Tocar un subrayado abre su nota.
-  function alTocar(e: React.MouseEvent) {
-    if (!document.getSelection()?.isCollapsed) return
-    const caja = marco.current!.getBoundingClientRect()
-    const x = (e.clientX - caja.left) / caja.width
-    const y = (e.clientY - caja.top) / caja.height
-    const tocada = anotaciones.find((a) =>
-      a.posicion?.some((r) => x >= r.x && x <= r.x + r.w && y >= r.y - 0.005 && y <= r.y + r.h + 0.005),
-    )
-    if (tocada) onTocarAnotacion(tocada)
-  }
-
-  return (
-    <div
-      ref={marco}
-      onClick={alTocar}
-      className="relative mx-auto bg-white shadow-md"
-      style={{ width: ancho, height: alto || ancho * 1.3 }}
-    >
-      <canvas ref={lienzo} className="absolute inset-0 z-0" style={{ width: ancho, height: alto }} draggable={false} />
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-[1]">
-        {anotaciones.flatMap((a) =>
-          (a.posicion ?? []).map((r, i) => (
-            <div
-              key={`${a.id}-${i}`}
-              className={`absolute rounded-sm mix-blend-multiply ${COLORES[a.tipo] ?? ''}`}
-              style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%`, width: `${r.w * 100}%`, height: `${r.h * 100}%` }}
-            />
-          )),
-        )}
-      </div>
-      <div ref={capa} className="textLayer" />
-    </div>
-  )
-}
-
-// Ancho disponible para la página; se recalcula al girar el teléfono o cambiar el tamaño de la ventana.
-function useAnchoDisponible(maximo: number) {
-  const [elemento, setElemento] = useState<HTMLElement | null>(null)
-  const [ancho, setAncho] = useState(0)
-  useEffect(() => {
-    if (!elemento) return
-    const observador = new ResizeObserver(([entrada]) => {
-      setAncho(Math.floor(Math.min(entrada.contentRect.width, maximo)))
-    })
-    observador.observe(elemento)
-    return () => observador.disconnect()
-  }, [elemento, maximo])
-  return { contenedor: setElemento, ancho }
-}
-
-function BotonBarra({ etiqueta, onClick, children }: { etiqueta: string; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label={etiqueta}
-      title={etiqueta}
-      className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-xs text-cielo-800 hover:bg-cielo-50"
-    >
-      {children}
-      {etiqueta}
-    </button>
-  )
-}
-
-function FormNota({
-  cita,
-  notaInicial = '',
-  onGuardar,
-  onEliminar,
-}: {
-  cita?: string | null
-  notaInicial?: string
-  onGuardar: (nota: string) => Promise<void>
-  onEliminar?: () => Promise<void>
-}) {
-  const [nota, setNota] = useState(notaInicial)
-  const { guardando, error, enviar } = useEnvio()
-  return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault()
-        void enviar(() => onGuardar(nota.trim()))
-      }}
-    >
-      {cita && <p className="font-serif text-lg leading-snug text-cielo-900 italic">«{cita}»</p>}
-      <AreaTexto id="nota" etiqueta="Tu nota" ayuda="(sólo tú la ves)" rows={4} value={nota} onChange={(e) => setNota(e.target.value)} />
-      {error && <MensajeError>{error}</MensajeError>}
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        {onEliminar ? (
-          <Boton type="button" variante="peligro" disabled={guardando} onClick={() => void enviar(onEliminar)}>
-            <Trash2 className="size-4" aria-hidden /> Borrar
-          </Boton>
-        ) : (
-          <span />
-        )}
-        <Boton type="submit" disabled={guardando}>
-          {guardando ? 'Guardando…' : 'Guardar'}
-        </Boton>
-      </div>
-    </form>
-  )
-}
-
-function FormIrA({ total, actual, onIr }: { total: number; actual: number; onIr: (n: number) => void }) {
-  const [valor, setValor] = useState(String(actual))
-  return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault()
-        onIr(Number(valor))
-      }}
-    >
-      <Campo
-        id="pagina"
-        etiqueta={`Página (1 a ${total})`}
-        type="number"
-        inputMode="numeric"
-        min={1}
-        max={total}
-        required
-        value={valor}
-        onChange={(e) => setValor(e.target.value)}
-      />
-      <Boton type="submit" className="w-full">
-        Ir
-      </Boton>
-    </form>
-  )
-}
-
-const NOMBRES: Record<TipoAnotacion, string> = {
-  subrayado: 'Subrayado',
-  frase: 'Frase guardada',
-  nota: 'Nota de la página',
-  marcador: 'Página marcada',
-}
-
-type Ventana =
-  | { tipo: 'notaSeleccion'; seleccion: Seleccion }
-  | { tipo: 'notaPagina' }
-  | { tipo: 'anotacion'; anotacion: Anotacion }
-  | { tipo: 'lista' }
-  | { tipo: 'ir' }
 
 export function Lector() {
   const id = Number(useParams().id)
@@ -326,38 +166,78 @@ export function Lector() {
   const { data: libro, isPending: cargandoLibro } = useLibro(id)
   const { data: progreso } = useProgreso()
   const { data: anotaciones = [] } = useAnotaciones(id)
-  const { contenedor, ancho } = useAnchoDisponible(900)
-  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
-  const [errorPdf, setErrorPdf] = useState(false)
+  const { pdf, avance, error: errorPdf } = useLibroAbierto(libro?.archivo)
+  const indice = useIndice(pdf)
+  const busqueda = useBusqueda(pdf)
+  const anotar = useAnotar(id)
+  const [ajustes, cambiarAjustes] = useAjustes()
+  useColorDeBarra(ajustes.tema)
+
+  const [area, setArea] = useState<HTMLElement | null>(null)
+  const espacio = useTamano(area)
+  const hojas = useRef<HTMLDivElement>(null)
   const [elegida, setElegida] = useState<number | null>(null)
+  const [direccion, setDireccion] = useState<'adelante' | 'atras' | null>(null)
+  const [proporcion, setProporcion] = useState(1.414)
   const [seleccion, setSeleccion] = useState<Seleccion | null>(null)
-  const [sinTexto, setSinTexto] = useState(false)
-  const [ventana, setVentana] = useState<Ventana | null>(null)
-  const [aviso, setAviso] = useState<string | null>(null)
-  const archivo = libro?.archivo
+  const [sinTexto, setSinTexto] = useState<Record<number, boolean>>({})
+  const [abierta, setVentana] = useState<Ventana | null>(null)
+  const [pestana, setPestana] = useState<Pestana>('indice')
+  const [barras, setBarras] = useState(true)
+  const [aviso, setAviso] = useState<Aviso | null>(null)
+  const [resaltando, setResaltando] = useState(false)
+  const [destello, setDestello] = useState<number | null>(Number(parametros.get('marca')) || null)
+  const [consejoOculto, setConsejoOculto] = useState(leerConsejoOculto)
 
-  // Descarga el libro (sólo si la persona puede leerlo) y lo abre.
-  useEffect(() => {
-    if (!archivo) return
-    let vigente = true
-    let cerrar: (() => Promise<void>) | undefined
-    descargarLibro(archivo)
-      .then(abrirPdf)
-      .then((abierto) => {
-        cerrar = abierto.cerrar
-        if (vigente) setPdf(abierto.pdf)
-        else void abierto.cerrar()
-      })
-      .catch(() => vigente && setErrorPdf(true))
-    return () => {
-      vigente = false
-      void cerrar?.()
-    }
-  }, [archivo])
+  // Una tarjeta cuya anotación ya no existe (por ejemplo, si no se pudo guardar) cuenta como cerrada.
+  const fichaAnotacion =
+    abierta?.tipo === 'ficha' && abierta.id !== null ? (anotar.buscar(anotaciones, abierta.id) ?? null) : null
+  const ventana = abierta?.tipo === 'ficha' && abierta.id !== null && !fichaAnotacion ? null : abierta
 
+  // ─── Qué páginas se ven y de qué tamaño ──────────────────────────────────
   const total = pdf?.numPages ?? 0
   const pedida = Number(parametros.get('pagina')) || null
-  const actual = Math.min(Math.max(elegida ?? pedida ?? progreso?.get(id) ?? 1, 1), Math.max(total, 1))
+  const deseada = limitar(elegida ?? pedida ?? progreso?.get(id)?.pagina ?? 1, 1, Math.max(total, 1))
+  const anchoUtil = espacio.ancho - 16
+  const ajustadaAlAlto = Math.floor((espacio.alto - 16) / proporcion)
+  const libroAbierto =
+    ajustes.dosPaginas && ajustes.zoom === 1 && total > 2 && ajustadaAlAlto >= 280 && anchoUtil >= ajustadaAlAlto * 2 + 2
+  // Página completa a la vista; en pantallas apaisadas, a lo ancho (hasta un máximo cómodo de leer).
+  const base = libroAbierto
+    ? ajustadaAlAlto
+    : ajustadaAlAlto >= anchoUtil * 0.6
+      ? Math.min(anchoUtil, ajustadaAlAlto)
+      : Math.min(anchoUtil, 760)
+  const ancho = Math.max(Math.floor(base * ajustes.zoom), 120)
+  const actual = libroAbierto ? inicioDePar(deseada) : deseada
+  const paginas = libroAbierto && actual > 1 && actual < total ? [actual, actual + 1] : [actual]
+  const ultimaVisible = paginas[paginas.length - 1]
+  const puedeDosPaginas = total > 2 && ajustes.zoom === 1 && anchoUtil >= ajustadaAlAlto * 2 + 2 && ajustadaAlAlto >= 280
+
+  useEffect(() => {
+    if (!pdf) return
+    let vigente = true
+    void proporcionDe(pdf, actual).then((p) => vigente && setProporcion(p))
+    return () => {
+      vigente = false
+    }
+  }, [pdf, actual])
+
+  // Al cambiar de página: arriba de todo y, en un momento, las vecinas ya dibujadas para pasar sin esperar.
+  const clavePaginas = paginas.join('-')
+  const precargarVecinas = useEffectEvent(() => {
+    if (!pdf || !espacio.ancho) return
+    const vecinas = [ultimaVisible + 1, ultimaVisible + 2, paginas[0] - 1, paginas[0] - 2]
+    for (const n of vecinas.filter((n) => n >= 1 && n <= total)) {
+      void dibujarPagina(pdf, n, ancho).catch(() => {})
+      void textoDePagina(pdf, n).catch(() => {})
+    }
+  })
+  useEffect(() => {
+    area?.scrollTo({ top: 0, left: 0 })
+    const espera = window.setTimeout(precargarVecinas, 350)
+    return () => window.clearTimeout(espera)
+  }, [area, clavePaginas, ancho, pdf])
 
   // Recuerda la página después de un momento sin cambiarla.
   useEffect(() => {
@@ -370,294 +250,382 @@ export function Lector() {
     return () => window.clearTimeout(espera)
   }, [pdf, id, actual, clienteConsultas])
 
-  function irA(numero: number) {
-    if (!total) return
-    setElegida(Math.min(Math.max(numero, 1), total))
+  function limpiarSeleccion() {
     setSeleccion(null)
     document.getSelection()?.removeAllRanges()
-    window.scrollTo({ top: 0 })
+  }
+
+  function irA(numero: number) {
+    if (!total) return
+    const destino = limitar(numero, 1, total)
+    setDireccion(destino > ultimaVisible ? 'adelante' : destino < actual ? 'atras' : null)
+    setElegida(destino)
+    limpiarSeleccion()
+  }
+  const siguiente = () => irA(ultimaVisible + 1)
+  const anterior = () => irA(libroAbierto ? inicioDePar(actual - 1) : actual - 1)
+
+  // ─── Teclado, selección y gestos ─────────────────────────────────────────
+  const alTeclear = useEffectEvent((e: KeyboardEvent) => {
+    if (ventana || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') siguiente()
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') anterior()
+    if (e.key === 'Escape') limpiarSeleccion()
+  })
+  useEffect(() => {
+    window.addEventListener('keydown', alTeclear)
+    return () => window.removeEventListener('keydown', alTeclear)
+  }, [])
+
+  // Qué texto está seleccionado, en qué página y en qué lugar de ella.
+  useEffect(() => {
+    let espera: number | undefined
+    const alCambiar = () => {
+      window.clearTimeout(espera)
+      espera = window.setTimeout(() => {
+        const elegido = document.getSelection()
+        const texto = elegido?.toString().replace(/\s+/g, ' ').trim() ?? ''
+        const ancla = elegido?.anchorNode
+        const marco = (ancla instanceof Element ? ancla : ancla?.parentElement)?.closest<HTMLElement>('[data-pagina]')
+        if (!elegido || elegido.isCollapsed || !texto || !marco?.querySelector('.textLayer')?.contains(ancla!)) {
+          setSeleccion(null)
+          return
+        }
+        const rects = rectangulosDe(elegido.getRangeAt(0), marco)
+        setSeleccion(rects.length ? { pagina: Number(marco.dataset.pagina), texto, rects } : null)
+      }, 250)
+    }
+    document.addEventListener('selectionchange', alCambiar)
+    return () => {
+      window.clearTimeout(espera)
+      document.removeEventListener('selectionchange', alCambiar)
+    }
+  }, [])
+
+  // Deslizar el dedo a los lados pasa de página; la página sigue al dedo.
+  const toque = useRef<{ x: number; y: number; t: number; arrastrando: boolean } | null>(null)
+  const puntero = useRef<{ tipo: string; conSeleccion: boolean }>({ tipo: '', conSeleccion: false })
+  const ampliada = ajustes.zoom > 1
+
+  function alEmpezarToque(e: React.TouchEvent) {
+    toque.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), arrastrando: false } : null
+  }
+  function alMoverToque(e: React.TouchEvent) {
+    const t = toque.current
+    if (!t) return
+    const dx = e.touches[0].clientX - t.x
+    const dy = e.touches[0].clientY - t.y
+    if (!t.arrastrando) {
+      if (ampliada || !document.getSelection()?.isCollapsed || Math.abs(dy) > 14) {
+        toque.current = null
+        return
+      }
+      if (Math.abs(dx) < 14 || Math.abs(dx) < Math.abs(dy) * 1.4) return
+      t.arrastrando = true
+    }
+    const sinMas = (dx > 0 && actual <= 1) || (dx < 0 && ultimaVisible >= total)
+    if (hojas.current) {
+      hojas.current.style.transition = 'none'
+      hojas.current.style.transform = `translateX(${sinMas ? dx / 4 : dx}px)`
+    }
+  }
+  function alSoltarToque(e: React.TouchEvent) {
+    const t = toque.current
+    toque.current = null
+    if (!t?.arrastrando) return
+    const dx = e.changedTouches[0].clientX - t.x
+    const rapido = Math.abs(dx) / (Date.now() - t.t) > 0.5
+    if ((Math.abs(dx) > 70 || rapido) && dx < 0 && ultimaVisible < total) siguiente()
+    else if ((Math.abs(dx) > 70 || rapido) && dx > 0 && actual > 1) anterior()
+    else if (hojas.current) {
+      hojas.current.style.transition = 'transform .2s ease-out'
+      hojas.current.style.transform = ''
+    }
+  }
+
+  // ─── Anotar ──────────────────────────────────────────────────────────────
+  const avisar = (texto: string, deshacer?: () => void) => setAviso({ texto, deshacer })
+  const cerrarAviso = useCallback(() => setAviso(null), [])
+  const sinConexion = () => avisar('No se pudo guardar. Revisa tu conexión.')
+  const marcarSinTexto = useCallback(
+    (numero: number, vacia: boolean) => setSinTexto((s) => (s[numero] === vacia ? s : { ...s, [numero]: vacia })),
+    [],
+  )
+
+  function desdeSeleccion(tipo: 'subrayado' | 'frase', color: ColorAnotacion | null) {
+    if (!seleccion) return null
+    const { provisional, guardada } = anotar.crear({
+      pagina: seleccion.pagina,
+      tipo,
+      texto: seleccion.texto,
+      posicion: seleccion.rects,
+      color,
+    })
+    guardada.catch(sinConexion)
+    limpiarSeleccion()
+    return { provisional, guardada }
+  }
+
+  function subrayar(color: ColorAnotacion) {
+    cambiarAjustes({ color })
+    desdeSeleccion('subrayado', color)
+  }
+
+  function guardarFrase() {
+    const creada = desdeSeleccion('frase', null)
+    creada?.guardada.then(
+      (fila) => avisar('Guardada en «Mis frases y notas»', () => void anotar.borrar(fila).catch(sinConexion)),
+      () => {},
+    )
+  }
+
+  function notaDesdeSeleccion() {
+    const creada = desdeSeleccion('subrayado', ajustes.color)
+    if (creada) setVentana({ tipo: 'ficha', id: creada.provisional.id, pagina: creada.provisional.pagina, enfocar: true })
+  }
+
+  function borrar(anotacion: Anotacion) {
+    setVentana(null)
+    anotar
+      .borrar(anotacion)
+      .then(() => avisar(BORRADA[anotacion.tipo], () => void anotar.restaurar(anotacion).guardada.catch(sinConexion)))
+      .catch(sinConexion)
+  }
+
+  const marcador = anotaciones.find((a) => a.tipo === 'marcador' && a.pagina === actual)
+  function alternarMarcador() {
+    if (marcador) {
+      anotar
+        .borrar(marcador)
+        .then(() => avisar('Quitaste la cinta de esta página'))
+        .catch(sinConexion)
+    } else {
+      anotar
+        .crear({ pagina: actual, tipo: 'marcador' })
+        .guardada.then(() => avisar('Página marcada con una cinta. La encuentras en el Cuaderno.'))
+        .catch(sinConexion)
+    }
   }
 
   useEffect(() => {
-    const alTeclear = (e: KeyboardEvent) => {
-      if (ventana) return
-      if (e.key === 'ArrowRight') irA(actual + 1)
-      if (e.key === 'ArrowLeft') irA(actual - 1)
-    }
-    window.addEventListener('keydown', alTeclear)
-    return () => window.removeEventListener('keydown', alTeclear)
-  })
-
-  const temporizadorAviso = useRef<number | undefined>(undefined)
-  function avisar(texto: string) {
-    setAviso(texto)
-    window.clearTimeout(temporizadorAviso.current)
-    temporizadorAviso.current = window.setTimeout(() => setAviso(null), 2500)
+    if (destello === null) return
+    const espera = window.setTimeout(() => setDestello(null), 2800)
+    return () => window.clearTimeout(espera)
+  }, [destello])
+  // ─── Búsqueda resaltada ──────────────────────────────────────────────────
+  const resaltado = resaltando && busqueda.buscado ? busqueda.buscado : null
+  const paginasConResultado = [...new Set(busqueda.resultados.map((r) => r.pagina))]
+  function irAResultado(sentido: 1 | -1) {
+    if (!paginasConResultado.length) return
+    const destino =
+      sentido === 1
+        ? (paginasConResultado.find((p) => p > ultimaVisible) ?? paginasConResultado[0])
+        : (paginasConResultado.findLast((p) => p < actual) ?? paginasConResultado[paginasConResultado.length - 1])
+    irA(destino)
   }
 
-  const recargarAnotaciones = () => void clienteConsultas.invalidateQueries({ queryKey: ['anotaciones'] })
-
-  async function anotar(tipo: TipoAnotacion, extra: Partial<Pick<Anotacion, 'texto' | 'posicion' | 'nota'>> = {}) {
-    const { error } = await supabase.from('anotaciones').insert({ libro_id: id, pagina: actual, tipo, ...extra })
-    if (error) throw error
-    recargarAnotaciones()
-  }
-
-  async function desdeSeleccion(tipo: 'subrayado' | 'frase') {
-    if (!seleccion) return
-    try {
-      await anotar(tipo, { texto: seleccion.texto, posicion: seleccion.rects })
-      avisar(tipo === 'frase' ? 'Frase guardada en «Mis frases y notas»' : 'Subrayado')
-    } catch {
-      avisar('No se pudo guardar. Revisa tu conexión.')
-    }
-    setSeleccion(null)
-    document.getSelection()?.removeAllRanges()
-  }
-
-  const delaPagina = anotaciones.filter((a) => a.pagina === actual)
-  const marcador = delaPagina.find((a) => a.tipo === 'marcador')
-
-  async function alternarMarcador() {
-    try {
-      if (marcador) {
-        const { error } = await supabase.from('anotaciones').delete().eq('id', marcador.id)
-        if (error) throw error
-        recargarAnotaciones()
-        avisar('Quitaste la marca de esta página')
-      } else {
-        await anotar('marcador')
-        avisar('Página marcada')
-      }
-    } catch {
-      avisar('No se pudo guardar. Revisa tu conexión.')
-    }
-  }
-
-  async function borrar(anotacion: Anotacion) {
-    const { error } = await supabase.from('anotaciones').delete().eq('id', anotacion.id)
-    if (error) throw error
-    recargarAnotaciones()
-    setVentana(null)
-  }
-
+  // ─── Pantalla ────────────────────────────────────────────────────────────
   if (cargandoLibro) return <Cargando />
   if (!libro) {
     return (
-      <div className="mx-auto max-w-md px-4 py-10">
-        <Vacio>Este libro no existe o no está compartido con tu grupo.</Vacio>
-        <Link to="/biblioteca" className="mt-4 block text-center text-cielo-700">
+      <div className="mx-auto max-w-md px-4 py-10 text-center">
+        <p className="rounded-2xl border border-dashed border-stone-300 px-5 py-8 text-stone-500">
+          Este libro no existe o no está compartido con tu grupo.
+        </p>
+        <Link to="/biblioteca" className="mt-4 inline-block text-cielo-700">
           Volver a la biblioteca
         </Link>
       </div>
     )
   }
 
+  const notas = anotaciones.filter((a) => a.tipo !== 'marcador')
+  const capitulo = indice?.findLast((e) => e.pagina <= actual)?.titulo
+  const listo = pdf && espacio.ancho > 0 && progreso !== undefined
+  const animacion =
+    direccion === 'adelante' ? 'animate-[pasar-adelante_.28s_ease-out]' : direccion === 'atras' ? 'animate-[pasar-atras_.28s_ease-out]' : ''
+
   return (
     <div
-      className="lector-protegido flex min-h-dvh flex-col bg-stone-200/60"
+      className="lector lector-protegido fixed inset-0 overflow-hidden"
+      data-tema={ajustes.tema}
       onContextMenu={(e) => e.preventDefault()}
       onCopy={(e) => e.preventDefault()}
       onCut={(e) => e.preventDefault()}
     >
-      <header className="sticky top-0 z-20 bg-cielo-800 pt-[env(safe-area-inset-top)] text-white shadow">
-        <div className="mx-auto flex max-w-3xl items-center gap-1 px-2 py-2">
-          <button onClick={() => navegar('/biblioteca')} aria-label="Volver a la biblioteca" className="rounded-full p-2 hover:bg-white/10">
-            <ArrowLeft className="size-5" />
-          </button>
-          <p className="min-w-0 flex-1 truncate font-serif text-xl font-semibold">{libro.titulo}</p>
-          <button
-            onClick={() => void alternarMarcador()}
-            aria-label={marcador ? 'Quitar marca de esta página' : 'Marcar esta página'}
-            className="rounded-full p-2 hover:bg-white/10"
-          >
-            {marcador ? <BookmarkCheck className="size-5 text-oro-400" /> : <Bookmark className="size-5" />}
-          </button>
-          <button onClick={() => setVentana({ tipo: 'notaPagina' })} aria-label="Nota en esta página" className="rounded-full p-2 hover:bg-white/10">
-            <StickyNote className="size-5" />
-          </button>
-          <button onClick={() => setVentana({ tipo: 'lista' })} aria-label="Mis notas de este libro" className="rounded-full p-2 hover:bg-white/10">
-            <NotebookText className="size-5" />
-          </button>
-        </div>
-      </header>
-
       <main
-        ref={contenedor}
-        className="mx-auto w-full max-w-3xl flex-1 px-2 pt-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+        ref={setArea}
+        className="absolute inset-0 overflow-auto overscroll-contain pt-[calc(3.5rem+env(safe-area-inset-top))] pb-[calc(6.25rem+env(safe-area-inset-bottom))] [scrollbar-gutter:stable]"
+        style={{ touchAction: ampliada ? 'auto' : 'pan-y pinch-zoom' }}
+        onPointerDown={(e) => {
+          puntero.current = { tipo: e.pointerType, conSeleccion: !document.getSelection()?.isCollapsed }
+        }}
+        // En el teléfono, tocar la página esconde o muestra las barras para leer sin distracciones.
+        onClick={() => {
+          if (puntero.current.tipo === 'touch' && !puntero.current.conSeleccion && listo) setBarras((v) => !v)
+        }}
+        onTouchStart={alEmpezarToque}
+        onTouchMove={alMoverToque}
+        onTouchEnd={alSoltarToque}
+        onTouchCancel={alSoltarToque}
       >
-        {errorPdf ? (
-          <Vacio>No se pudo abrir el libro. Revisa tu conexión e inténtalo de nuevo.</Vacio>
-        ) : pdf && ancho > 0 && progreso !== undefined ? (
-          <>
-            {!sinTexto && <ConsejoSubrayar />}
-            <PaginaPdf
-              pdf={pdf}
-              numero={actual}
-              ancho={ancho}
-              anotaciones={delaPagina}
-              onSeleccion={setSeleccion}
-              onTocarAnotacion={(anotacion) => setVentana({ tipo: 'anotacion', anotacion })}
-              onSinTexto={setSinTexto}
-            />
-            {sinTexto && (
-              <p className="mx-auto mt-3 max-w-md text-center text-sm text-stone-500">
-                Esta página es una imagen: no se puede subrayar, pero puedes ponerle una nota o marcarla.
-              </p>
-            )}
-          </>
-        ) : (
-          <Cargando />
-        )}
+        <div className="flex min-h-full w-max min-w-full flex-col items-center justify-center p-2">
+          {errorPdf ? (
+            <div className="max-w-sm px-4 text-center">
+              <p className="text-(--lector-tenue)">No se pudo abrir el libro. Revisa tu conexión e inténtalo de nuevo.</p>
+              <button onClick={() => location.reload()} className="mt-4 rounded-xl bg-cielo-800 px-5 py-2.5 font-medium text-white">
+                Reintentar
+              </button>
+            </div>
+          ) : !listo ? (
+            <Apertura titulo={libro.titulo} portada={urlPortada(libro.portada)} avance={avance} />
+          ) : (
+            <div ref={hojas} key={clavePaginas} className={`flex ${animacion}`}>
+              {paginas.map((numero, i) => (
+                <PaginaPdf
+                  key={numero}
+                  pdf={pdf}
+                  numero={numero}
+                  ancho={ancho}
+                  proporcion={proporcion}
+                  lado={paginas.length === 2 ? (i === 0 ? 'izquierda' : 'derecha') : null}
+                  anotaciones={anotaciones.filter((a) => a.pagina === numero)}
+                  ocultarMarcas={ajustes.ocultarMarcas}
+                  busqueda={resaltado}
+                  destello={destello}
+                  onTocarAnotacion={(a) => setVentana({ tipo: 'ficha', id: a.id, pagina: a.pagina, enfocar: false })}
+                  onSinTexto={marcarSinTexto}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-        {seleccion ? (
-          // preventDefault evita que, al tocar un botón, el navegador borre la selección antes de usarla.
-          <div className="mx-auto flex max-w-3xl items-center gap-1 px-2 py-2" onMouseDown={(e) => e.preventDefault()}>
-            <p className="line-clamp-2 min-w-0 flex-1 px-1 text-sm text-stone-600 italic">«{seleccion.texto}»</p>
-            <BotonBarra etiqueta="Subrayar" onClick={() => void desdeSeleccion('subrayado')}>
-              <Highlighter className="size-5" aria-hidden />
-            </BotonBarra>
-            <BotonBarra etiqueta="Nota" onClick={() => setVentana({ tipo: 'notaSeleccion', seleccion })}>
-              <MessageSquarePlus className="size-5" aria-hidden />
-            </BotonBarra>
-            <BotonBarra etiqueta="Frase" onClick={() => void desdeSeleccion('frase')}>
-              <Quote className="size-5" aria-hidden />
-            </BotonBarra>
-            <button
-              onClick={() => {
-                setSeleccion(null)
-                document.getSelection()?.removeAllRanges()
-              }}
-              aria-label="Cancelar"
-              className="rounded-full p-2 text-stone-500 hover:bg-stone-100"
-            >
-              <X className="size-5" />
-            </button>
-          </div>
-        ) : (
-          <div className="mx-auto flex max-w-3xl items-center justify-between px-2 py-2">
-            <button
-              onClick={() => irA(actual - 1)}
-              disabled={actual <= 1}
-              className="flex items-center gap-1 rounded-xl px-3 py-2.5 font-medium text-cielo-800 hover:bg-cielo-50 disabled:opacity-30"
-            >
-              <ChevronLeft className="size-5" aria-hidden /> Anterior
-            </button>
-            <button onClick={() => setVentana({ tipo: 'ir' })} className="rounded-xl px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100">
-              {total ? `${actual} de ${total}` : '…'}
-            </button>
-            <button
-              onClick={() => irA(actual + 1)}
-              disabled={!total || actual >= total}
-              className="flex items-center gap-1 rounded-xl px-3 py-2.5 font-medium text-cielo-800 hover:bg-cielo-50 disabled:opacity-30"
-            >
-              Siguiente <ChevronRight className="size-5" aria-hidden />
-            </button>
-          </div>
-        )}
-      </nav>
+      <BarraSuperior
+        visible={barras}
+        titulo={libro.titulo}
+        subtitulo={capitulo ?? libro.autor ?? (total ? `${total} páginas` : '')}
+        cuentaNotas={notas.length}
+        onVolver={() => navegar('/biblioteca')}
+        onBuscar={() => {
+          setPestana('buscar')
+          setVentana({ tipo: 'cuaderno' })
+        }}
+        onCuaderno={() => {
+          setPestana((p) => (p === 'buscar' ? 'indice' : p))
+          setVentana({ tipo: 'cuaderno' })
+        }}
+        onApariencia={() => setVentana({ tipo: 'apariencia' })}
+      />
 
-      {aviso && (
-        <p
-          role="status"
-          className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-sm rounded-xl bg-stone-900/90 px-4 py-3 text-center text-sm text-white shadow-lg"
-        >
-          {aviso}
+      {resaltado && (
+        <BarraBusqueda
+          buscado={resaltado}
+          cuenta={busqueda.resultados.length}
+          conBarras={barras}
+          onAnterior={() => irAResultado(-1)}
+          onSiguiente={() => irAResultado(1)}
+          onQuitar={() => setResaltando(false)}
+        />
+      )}
+
+      {seleccion ? (
+        <BarraSeleccion
+          texto={seleccion.texto}
+          ultimoColor={ajustes.color}
+          onSubrayar={subrayar}
+          onNota={notaDesdeSeleccion}
+          onFrase={guardarFrase}
+          onCancelar={limpiarSeleccion}
+        />
+      ) : (
+        <BarraInferior
+          visible={barras}
+          actual={actual}
+          total={total}
+          marcada={!!marcador}
+          nombreDe={(n) => indice?.findLast((e) => e.pagina <= n)?.titulo ?? null}
+          onIr={irA}
+          onAnterior={anterior}
+          onSiguiente={siguiente}
+          onMarcar={alternarMarcador}
+          onNota={() => setVentana({ tipo: 'ficha', id: null, pagina: actual, enfocar: true })}
+        />
+      )}
+
+      {!barras && !seleccion && total > 0 && (
+        <p className="pointer-events-none fixed inset-x-0 bottom-[calc(0.4rem+env(safe-area-inset-bottom))] text-center text-xs text-(--lector-tenue) tabular-nums">
+          {paginas.join('–')} / {total}
         </p>
       )}
 
-      {ventana?.tipo === 'notaSeleccion' && (
-        <Hoja titulo="Nota" onCerrar={() => setVentana(null)}>
-          <FormNota
-            cita={ventana.seleccion.texto}
-            onGuardar={async (nota) => {
-              await anotar('subrayado', { texto: ventana.seleccion.texto, posicion: ventana.seleccion.rects, nota: nota || null })
-              setVentana(null)
-              setSeleccion(null)
-              document.getSelection()?.removeAllRanges()
-            }}
-          />
-        </Hoja>
+      {listo && !consejoOculto && !seleccion && !ventana && barras && paginas.some((n) => sinTexto[n] === false) && (
+        <Consejo
+          onCerrar={() => {
+            setConsejoOculto(true)
+            try {
+              localStorage.setItem(CLAVE_CONSEJO, '1')
+            } catch {
+              // Sin almacenamiento sólo se oculta mientras el libro esté abierto.
+            }
+          }}
+        />
       )}
-      {ventana?.tipo === 'notaPagina' && (
-        <Hoja titulo={`Nota en la página ${actual}`} onCerrar={() => setVentana(null)}>
-          <FormNota
-            onGuardar={async (nota) => {
-              if (!nota) return setVentana(null)
-              await anotar('nota', { nota })
-              setVentana(null)
+
+      {aviso && <MensajeAviso aviso={aviso} onCerrar={cerrarAviso} />}
+
+      {ventana?.tipo === 'ficha' && (ventana.id === null || fichaAnotacion) && (
+        <Ficha
+          anotacion={fichaAnotacion ?? null}
+          pagina={ventana.pagina}
+          enfocar={ventana.enfocar}
+          onGuardarNota={async (nota) => {
+            if (fichaAnotacion) await anotar.cambiar(fichaAnotacion.id, { nota: nota || null })
+            else if (nota) {
+              await anotar.crear({ pagina: ventana.pagina, tipo: 'nota', nota }).guardada
               avisar('Nota guardada')
-            }}
-          />
-        </Hoja>
+            }
+          }}
+          onColor={(color) => {
+            cambiarAjustes({ color })
+            anotar.cambiar(fichaAnotacion!.id, { color, tipo: 'subrayado' }).catch(sinConexion)
+          }}
+          onFrase={(esFrase) => anotar.cambiar(fichaAnotacion!.id, { tipo: esFrase ? 'frase' : 'subrayado' }).catch(sinConexion)}
+          onBorrar={() => borrar(fichaAnotacion!)}
+          onCerrar={() => setVentana(null)}
+        />
       )}
-      {ventana?.tipo === 'anotacion' && (
-        <Hoja titulo={NOMBRES[ventana.anotacion.tipo]} onCerrar={() => setVentana(null)}>
-          <FormNota
-            cita={ventana.anotacion.texto}
-            notaInicial={ventana.anotacion.nota ?? ''}
-            onGuardar={async (nota) => {
-              const { error } = await supabase.from('anotaciones').update({ nota: nota || null }).eq('id', ventana.anotacion.id)
-              if (error) throw error
-              recargarAnotaciones()
-              setVentana(null)
-            }}
-            onEliminar={() => borrar(ventana.anotacion)}
-          />
-        </Hoja>
+
+      {ventana?.tipo === 'cuaderno' && (
+        <Cuaderno
+          pestana={pestana}
+          onPestana={setPestana}
+          indice={indice}
+          anotaciones={anotaciones}
+          busqueda={busqueda}
+          actual={actual}
+          total={total}
+          onIrPagina={(n) => {
+            irA(n)
+            if (enTelefono()) setVentana(null)
+          }}
+          onIrAnotacion={(a) => {
+            irA(a.pagina)
+            setDestello(a.id)
+            if (enTelefono()) setVentana(null)
+          }}
+          onIrResultado={(n) => {
+            irA(n)
+            setResaltando(true)
+            if (enTelefono()) setVentana(null)
+          }}
+          onCerrar={() => setVentana(null)}
+        />
       )}
-      {ventana?.tipo === 'ir' && (
-        <Hoja titulo="Ir a la página" onCerrar={() => setVentana(null)}>
-          <FormIrA
-            total={total}
-            actual={actual}
-            onIr={(n) => {
-              irA(n)
-              setVentana(null)
-            }}
-          />
-        </Hoja>
-      )}
-      {ventana?.tipo === 'lista' && (
-        <Hoja titulo="Mis notas de este libro" onCerrar={() => setVentana(null)}>
-          {anotaciones.length === 0 ? (
-            <Vacio>Todavía no tienes notas, subrayados ni páginas marcadas en este libro.</Vacio>
-          ) : (
-            <ul className="space-y-2">
-              {anotaciones.map((anotacion) => {
-                const Icono = ICONOS_ANOTACION[anotacion.tipo]
-                return (
-                  <li key={anotacion.id} className="flex items-start gap-2 rounded-xl bg-white p-3 ring-1 ring-stone-200">
-                    <button
-                      onClick={() => {
-                        irA(anotacion.pagina)
-                        setVentana(null)
-                      }}
-                      className="min-w-0 flex-1 text-left"
-                    >
-                      <span className="flex items-center gap-1.5 text-xs text-stone-500">
-                        <Icono className="size-3.5 text-oro-600" aria-hidden /> Página {anotacion.pagina} · {NOMBRES[anotacion.tipo]}
-                      </span>
-                      {anotacion.texto && <span className="mt-1 line-clamp-3 block text-stone-800 italic">«{anotacion.texto}»</span>}
-                      {anotacion.nota && <span className="mt-1 block whitespace-pre-line text-stone-600">{anotacion.nota}</span>}
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('¿Borrar esta nota?')) void borrar(anotacion).then(() => setVentana({ tipo: 'lista' }))
-                      }}
-                      aria-label="Borrar"
-                      className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-red-700"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </Hoja>
+
+      {ventana?.tipo === 'apariencia' && (
+        <Apariencia ajustes={ajustes} onCambiar={cambiarAjustes} puedeDosPaginas={puedeDosPaginas} onCerrar={() => setVentana(null)} />
       )}
     </div>
   )
