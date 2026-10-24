@@ -1,3 +1,5 @@
+import { Church, MessagesSquare, Mountain, Sun, Tent, UsersRound, type LucideIcon } from 'lucide-react'
+
 export type Santo = {
   id: number
   nombre: string
@@ -108,15 +110,16 @@ export type Charla = {
 
 export const FASES: Record<FaseEncuesta, { nombre: string; estilo: string }> = {
   propuestas: { nombre: 'Propuestas abiertas', estilo: 'bg-emerald-100 text-emerald-800' },
-  votacion: { nombre: 'Votación abierta', estilo: 'bg-oro-400/25 text-oro-600' },
-  cerrada: { nombre: 'Cerrada', estilo: 'bg-stone-200 text-stone-600' },
+  votacion: { nombre: 'Votación abierta', estilo: 'bg-oro-400/25 text-oro-700' },
+  cerrada: { nombre: 'Cerrada', estilo: 'bg-stone-200 text-stone-700' },
 }
 
-export const TIPOS_EVENTO:Record<TipoEvento, { nombre: string; estilo: string }> = {
-  actividad: { nombre: 'Actividad', estilo: 'bg-cielo-100 text-cielo-800' },
-  campamento: { nombre: 'Campamento', estilo: 'bg-emerald-100 text-emerald-800' },
-  excursion: { nombre: 'Excursión', estilo: 'bg-amber-100 text-amber-800' },
-  misa: { nombre: 'Misa', estilo: 'bg-oro-400/25 text-oro-600' },
-  hora_santa: { nombre: 'Hora santa', estilo: 'bg-violet-100 text-violet-800' },
-  charla: { nombre: 'Charla', estilo: 'bg-rose-100 text-rose-800' },
+// estilo: la etiqueta; color: el puntito del calendario del mes. La hora santa lleva un sol, como la custodia.
+export const TIPOS_EVENTO: Record<TipoEvento, { nombre: string; estilo: string; color: string; Icono: LucideIcon }> = {
+  actividad: { nombre: 'Actividad', estilo: 'bg-cielo-100 text-cielo-800', color: '#3b64b3', Icono: UsersRound },
+  campamento: { nombre: 'Campamento', estilo: 'bg-emerald-100 text-emerald-800', color: '#059669', Icono: Tent },
+  excursion: { nombre: 'Excursión', estilo: 'bg-amber-100 text-amber-900', color: '#d97706', Icono: Mountain },
+  misa: { nombre: 'Misa', estilo: 'bg-oro-400/25 text-oro-700', color: '#c49a2c', Icono: Church },
+  hora_santa: { nombre: 'Hora santa', estilo: 'bg-violet-100 text-violet-800', color: '#7c3aed', Icono: Sun },
+  charla: { nombre: 'Charla', estilo: 'bg-rose-100 text-rose-800', color: '#e11d48', Icono: MessagesSquare },
 }

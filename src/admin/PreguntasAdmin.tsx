@@ -96,16 +96,16 @@ export function PreguntasAdmin() {
         <Vacio>{vista === 'pendientes' ? 'No hay preguntas por responder.' : 'Todavía no has respondido preguntas.'}</Vacio>
       ) : (
         visibles.map((pregunta) => (
-          <article key={pregunta.id} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200">
+          <article key={pregunta.id} className="rounded-2xl bg-white p-5 shadow-tarjeta ring-1 ring-stone-200/80">
             <p className="font-medium text-stone-900">{pregunta.autor?.nombre ?? 'Cuenta eliminada'}</p>
             <p className="text-sm">
               {pregunta.grupo_id !== null && (
                 <>
                   <Destino grupoId={pregunta.grupo_id} />
-                  <span className="text-stone-400"> · </span>
+                  <span className="text-stone-500"> · </span>
                 </>
               )}
-              <span className="text-stone-400">{diaCorto(pregunta.creada_en)}</span>
+              <span className="text-stone-500">{diaCorto(pregunta.creada_en)}</span>
             </p>
             <p className="mt-2 whitespace-pre-line text-stone-800">{pregunta.texto}</p>
             {pregunta.respuesta && (

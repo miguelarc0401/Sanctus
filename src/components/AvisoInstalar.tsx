@@ -28,19 +28,19 @@ export function AvisoInstalar() {
   }
 
   return (
-    <section className="relative rounded-2xl bg-white p-4 pr-12 shadow-sm ring-1 ring-stone-200">
+    <section className="relative rounded-2xl bg-white p-4 pr-14 shadow-tarjeta ring-1 ring-stone-200/80">
       <button
         onClick={ocultar}
         aria-label="Ocultar"
-        className="absolute top-3 right-3 rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+        className="absolute top-1.5 right-1.5 grid size-11 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-700"
       >
-        <X className="size-5" />
+        <X className="size-5" aria-hidden />
       </button>
       <p className="font-medium text-cielo-800">Instala Santa María en tu teléfono</p>
       {puedeInstalar ? (
         <button
           onClick={() => void instalar()}
-          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-cielo-800 px-4 py-2 text-sm font-medium text-white hover:bg-cielo-700"
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-cielo-800 px-4 text-sm font-medium text-white shadow-sm shadow-cielo-900/20 hover:bg-cielo-700"
         >
           <Download className="size-4" aria-hidden />
           Instalar

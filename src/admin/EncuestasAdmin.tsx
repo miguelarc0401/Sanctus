@@ -72,10 +72,10 @@ export function EncuestasAdmin() {
       ) : encuestas.length === 0 ? (
         <Vacio>Este grupo todavía no tiene encuestas.</Vacio>
       ) : (
-        <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {encuestas.map((encuesta) => (
             <li key={encuesta.id}>
-              <Link to={`/admin/encuestas/${encuesta.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-cielo-50">
+              <Link to={`/admin/encuestas/${encuesta.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-cielo-50">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-stone-900">{encuesta.titulo}</span>
                   <span className="text-sm text-stone-500">{diaCorto(encuesta.creada_en)}</span>

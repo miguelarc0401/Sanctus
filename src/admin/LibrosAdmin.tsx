@@ -247,7 +247,7 @@ function FormEditarLibro({ libro, onListo }: { libro: LibroConGrupos; onListo: (
         onChange={(e) => setDescripcion(e.target.value)}
       />
       <CasillasDeGrupos elegidos={grupos} onCambiar={setGrupos} />
-      {grupos.length === 0 && <p className="text-sm text-oro-600">Sin grupos, nadie más que tú podrá leerlo.</p>}
+      {grupos.length === 0 && <p className="text-sm text-oro-700">Sin grupos, nadie más que tú podrá leerlo.</p>}
       {error && <MensajeError>{error}</MensajeError>}
       <PieFormulario
         guardando={guardando}
@@ -278,7 +278,7 @@ export function LibrosAdmin() {
       ) : libros.length === 0 ? (
         <Vacio>Todavía no has subido libros.</Vacio>
       ) : (
-        <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {libros.map((libro) => {
             const portada = urlPortada(libro.portada)
             const nombres = libro.libros_grupos
@@ -286,7 +286,7 @@ export function LibrosAdmin() {
               .filter(Boolean)
             return (
               <li key={libro.id}>
-                <button onClick={() => setEditando(libro)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-cielo-50">
+                <button onClick={() => setEditando(libro)} className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cielo-50">
                   {portada ? (
                     <img src={portada} alt="" className="h-16 w-12 shrink-0 rounded object-cover ring-1 ring-stone-200" />
                   ) : (

@@ -51,3 +51,38 @@ export const diaSemana = (iso: string) => formatoDiaSemana.format(new Date(iso))
 // Para columnas de tipo fecha («2026-10-19»), sin hora.
 export const fechaLarga = (fecha: string) => formatoDiaLargo.format(deFechaISO(fecha))
 export const semanaDel =(semana: string) => `Semana del ${formatoDiaLargo.format(deFechaISO(semana))}`
+
+const formatoMesCorto = new Intl.DateTimeFormat(IDIOMA, { month: 'short' })
+export const mesCorto = (iso: string) => formatoMesCorto.format(new Date(iso)).replace('.', '')
+export const hoyLargo = () => formatoDiaLargo.format(new Date())
+
+// Días de calendario entre hoy y una fecha (0 = hoy, 1 = mañana, -1 = ayer).
+export function diasDesdeHoy(iso: string) {
+  const dia = new Date(iso)
+  dia.setHours(0, 0, 0, 0)
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  return Math.round((dia.getTime() - hoy.getTime()) / 86_400_000)
+}
+
+export function saludo() {
+  const horas = new Date().getHours()
+  return horas >= 5 && horas < 12 ? 'Buenos días' : horas >= 12 && horas < 19 ? 'Buenas tardes' : 'Buenas noches'
+}
+
+// «Hoy», «Mañana», «En 3 días» o «En curso» para lo que está por pasar dentro de una semana.
+export function cuandoEs(inicio: string, fin: string | null) {
+  const dias = diasDesdeHoy(inicio)
+  if (dias < 0) return fin && Date.parse(fin) >= Date.now() ? 'En curso' : null
+  if (dias === 0) return 'Hoy'
+  if (dias === 1) return 'Mañana'
+  return dias < 7 ? `En ${dias} días` : null
+}
+
+// «Hoy», «Ayer», «Hace 3 días» o la fecha, para lo ya publicado.
+export function haceCuanto(iso: string) {
+  const dias = -diasDesdeHoy(iso)
+  if (dias <= 0) return 'Hoy'
+  if (dias === 1) return 'Ayer'
+  return dias < 7 ? `Hace ${dias} días` : diaCorto(iso)
+}

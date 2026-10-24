@@ -83,3 +83,19 @@ export function useEventosPasados(grupoId: number | null, activo: boolean) {
     },
   })
 }
+
+// Eventos de un mes (mes de 0 a 11), incluidos los que empezaron antes y siguen en curso.
+export function useEventosDelMes(grupoId: number | null, anio: number, mes: number) {
+  return useQuery({
+    queryKey: ['eventos', 'mes', grupoId, anio, mes],
+    queryFn: async () => {
+      const desde = new Date(anio, mes, 1).toISOString()
+      const hasta = new Date(anio, mes + 1, 1).toISOString()
+      const antes = new Date(Date.parse(desde) - 31 * DIA).toISOString()
+      const filas = await datos<Evento[]>(
+        supabase.from('eventos').select('*').or(filtroGrupo(grupoId)).gte('inicio', antes).lt('inicio', hasta).order('inicio'),
+      )
+      return filas.filter((e) => !terminoAntesDe(e, desde))
+    },
+  })
+}

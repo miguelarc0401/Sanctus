@@ -196,7 +196,7 @@ function FormAprobar({ miembro, grupos, onListo }: { miembro: Miembro; grupos: G
       </div>
       <CasillasDeGrupos grupos={grupos} elegidos={elegidos} onCambiar={setElegidos} />
       {elegidos.length === 0 && (
-        <p className="text-sm text-oro-600">Sin grupo sólo verá lo que publiques para toda la parroquia.</p>
+        <p className="text-sm text-oro-700">Sin grupo sólo verá lo que publiques para toda la parroquia.</p>
       )}
       {error && <MensajeError>{error}</MensajeError>}
       <PieFormulario guardando={guardando} textoGuardar="Aprobar" />
@@ -360,14 +360,14 @@ function Solicitudes({
 
   return (
     <section className="space-y-3">
-      <h2 className="px-1 text-sm font-semibold tracking-wide text-oro-600 uppercase">
+      <h2 className="px-1 text-sm font-semibold tracking-wide text-oro-700 uppercase">
         Solicitudes nuevas ({solicitudes.length})
       </h2>
       {error && <MensajeError>{error}</MensajeError>}
       {solicitudes.map((solicitud) => {
         const pidio = grupos.find((g) => g.id === solicitud.grupo_solicitado)
         return (
-          <article key={solicitud.id} className="rounded-2xl bg-white p-4 shadow-sm ring-2 ring-oro-400/50">
+          <article key={solicitud.id} className="rounded-2xl bg-white p-4 shadow-tarjeta ring-2 ring-oro-400/50">
             <p className="font-medium text-stone-900">{solicitud.nombre}</p>
             <p className="font-mono text-sm text-stone-500">{solicitud.acceso}</p>
             <p className="mt-1 text-sm text-stone-600">
@@ -469,16 +469,16 @@ export function Miembros() {
       ) : visibles.length === 0 ? (
         <Vacio>No hay miembros aquí.</Vacio>
       ) : (
-        <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {visibles.map((miembro) => (
             <li key={miembro.id}>
               <button
                 onClick={() => setVentana({ tipo: 'editar', miembro })}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-cielo-50"
+                className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cielo-50"
               >
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className={miembro.estado === 'suspendido' ? 'text-stone-400 line-through' : 'text-stone-900'}>
+                    <span className={miembro.estado === 'suspendido' ? 'text-stone-500 line-through' : 'text-stone-900'}>
                       {miembro.nombre}
                     </span>
                     {miembro.es_admin && (
@@ -492,7 +492,7 @@ export function Miembros() {
                       </span>
                     )}
                     {miembro.debe_cambiar_contrasena && (
-                      <span className="rounded-full bg-oro-400/25 px-2 py-0.5 text-xs font-medium text-oro-600">
+                      <span className="rounded-full bg-oro-400/25 px-2 py-0.5 text-xs font-medium text-oro-700">
                         Aún no entra
                       </span>
                     )}

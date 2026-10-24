@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/contexto'
 import { Boton, Campo, MensajeError } from '../components/Formulario'
+import { PantallaAcceso } from '../components/Pantallas'
 import { traducirError } from '../lib/errores'
 import { supabase } from '../lib/supabase'
 
@@ -33,23 +34,19 @@ export function CambiarContrasena() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 py-12">
-      {!esTemporal && (
-        <Link to="/mas" className="mb-6 inline-flex items-center gap-1 text-sm text-cielo-700">
-          <ArrowLeft className="size-4" aria-hidden /> Volver
-        </Link>
-      )}
-      <h1 className="font-serif text-4xl font-semibold text-cielo-800">
-        {esTemporal ? 'Crea tu contraseña' : 'Cambiar contraseña'}
-      </h1>
-      {esTemporal && (
-        <p className="mt-2 text-stone-600">
-          Es tu primera vez aquí. Cambia la contraseña temporal por una que sólo tú conozcas.
-        </p>
-      )}
-
+    <PantallaAcceso
+      titulo={esTemporal ? 'Crea tu contraseña' : 'Cambiar contraseña'}
+      subtitulo={esTemporal ? 'Es tu primera vez aquí. Cambia la contraseña temporal por una que sólo tú conozcas.' : undefined}
+      arriba={
+        !esTemporal && (
+          <Link to="/mas" className="-ml-2 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-cielo-100 hover:bg-white/10">
+            <ArrowLeft className="size-4" aria-hidden /> Volver
+          </Link>
+        )
+      }
+    >
       <form
-        className="mt-8 space-y-4"
+        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault()
           void guardar()
@@ -58,6 +55,7 @@ export function CambiarContrasena() {
         <Campo
           id="nueva"
           etiqueta="Nueva contraseña"
+          ayuda="(mínimo 8 caracteres)"
           type="password"
           autoComplete="new-password"
           required
@@ -78,6 +76,6 @@ export function CambiarContrasena() {
           {enviando ? 'Guardando…' : 'Guardar contraseña'}
         </Boton>
       </form>
-    </div>
+    </PantallaAcceso>
   )
 }

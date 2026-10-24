@@ -32,13 +32,13 @@ export function InvitacionNotificaciones() {
   }
 
   return (
-    <section className="relative rounded-2xl bg-white p-4 pr-12 shadow-sm ring-1 ring-stone-200">
+    <section className="relative rounded-2xl bg-white p-4 pr-14 shadow-tarjeta ring-1 ring-stone-200/80">
       <button
         onClick={ocultar}
         aria-label="Ocultar"
-        className="absolute top-3 right-3 rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+        className="absolute top-1.5 right-1.5 grid size-11 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-700"
       >
-        <X className="size-5" />
+        <X className="size-5" aria-hidden />
       </button>
       <p className="font-medium text-cielo-800">¿Quieres enterarte de los avisos al momento?</p>
       <button
@@ -47,7 +47,7 @@ export function InvitacionNotificaciones() {
             .catch((e: Error) => setError(e.message))
             .finally(actualizar)
         }
-        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-cielo-800 px-4 py-2 text-sm font-medium text-white hover:bg-cielo-700"
+        className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-cielo-800 px-4 text-sm font-medium text-white shadow-sm shadow-cielo-900/20 hover:bg-cielo-700"
       >
         <Bell className="size-4" aria-hidden /> Activar notificaciones
       </button>
@@ -81,31 +81,33 @@ export function AjusteNotificaciones() {
   if (estado === 'cargando') return null
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200">
-      <p className="flex items-center gap-2 font-medium text-stone-900">
-        {estado === 'activas' ? <BellRing className="size-5 text-cielo-700" aria-hidden /> : <Bell className="size-5 text-cielo-700" aria-hidden />}
+    <section className="rounded-2xl bg-white p-5 shadow-tarjeta ring-1 ring-stone-200/80">
+      <p className="flex items-center gap-3 font-medium text-stone-900">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-cielo-50 text-cielo-700 ring-1 ring-cielo-100">
+          {estado === 'activas' ? <BellRing className="size-5" aria-hidden /> : <Bell className="size-5" aria-hidden />}
+        </span>
         Notificaciones
       </p>
 
       {estado === 'instalar-primero' && (
-        <p className="mt-2 text-sm text-stone-600">
+        <p className="mt-3 text-sm text-stone-600">
           En iPhone, primero instala la app: en Safari toca{' '}
           <Share className="inline size-4 align-text-bottom" aria-label="Compartir" /> y luego «Agregar a inicio». Ábrela desde
           ahí y activa las notificaciones en esta pantalla.
         </p>
       )}
       {estado === 'no-disponible' && (
-        <p className="mt-2 text-sm text-stone-600">Este navegador no permite notificaciones. Prueba instalando la app en tu teléfono.</p>
+        <p className="mt-3 text-sm text-stone-600">Este navegador no permite notificaciones. Prueba instalando la app en tu teléfono.</p>
       )}
       {estado === 'bloqueadas' && (
-        <p className="mt-2 text-sm text-stone-600">
+        <p className="mt-3 text-sm text-stone-600">
           Las bloqueaste para esta app. Para activarlas, entra a los ajustes del navegador (o del teléfono) y permite las
           notificaciones de Santa María.
         </p>
       )}
       {estado === 'apagadas' && (
         <>
-          <p className="mt-2 text-sm text-stone-600">Entérate al momento de avisos, eventos, votaciones y respuestas a tus preguntas.</p>
+          <p className="mt-3 text-sm text-stone-600">Entérate al momento de avisos, eventos, votaciones y respuestas a tus preguntas.</p>
           <Boton className="mt-3 w-full" disabled={trabajando} onClick={() => void hacer(activarNotificaciones)}>
             <Bell className="size-4" aria-hidden /> Activar notificaciones
           </Boton>

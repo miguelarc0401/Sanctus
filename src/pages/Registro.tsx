@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link, Navigate } from 'react-router'
 import { useAuth } from '../auth/contexto'
 import { AreaTexto, Boton, Campo, MensajeError, Selector } from '../components/Formulario'
+import { PantallaAcceso } from '../components/Pantallas'
 import { llamarFuncion } from '../lib/consultas'
 import { traducirError } from '../lib/errores'
 import { supabase } from '../lib/supabase'
@@ -56,16 +57,17 @@ export function Registro() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 py-12">
-      <Link to="/entrar" className="mb-6 inline-flex items-center gap-1 text-sm text-cielo-700">
-        <ArrowLeft className="size-4" aria-hidden /> Ya tengo cuenta
-      </Link>
-      <img src="/logo.svg" alt="" className="size-14 rounded-2xl shadow" />
-      <h1 className="mt-4 font-serif text-4xl font-semibold text-cielo-800">Crear mi cuenta</h1>
-      <p className="mt-2 text-stone-600">Tu coordinador revisará tu solicitud y te dará acceso a tu grupo.</p>
-
+    <PantallaAcceso
+      titulo="Crear mi cuenta"
+      subtitulo="Tu coordinador revisará tu solicitud y te dará acceso a tu grupo."
+      arriba={
+        <Link to="/entrar" className="-ml-2 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-cielo-100 hover:bg-white/10">
+          <ArrowLeft className="size-4" aria-hidden /> Ya tengo cuenta
+        </Link>
+      }
+    >
       <form
-        className="mt-8 space-y-4"
+        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault()
           void registrarme()
@@ -97,7 +99,7 @@ export function Registro() {
             setAccesoEditado(true)
           }}
         />
-        <p className="-mt-2 text-sm text-stone-500">Con esto vas a entrar a la app. Sin espacios ni acentos.</p>
+        <p className="-mt-2 text-sm text-stone-600">Con esto vas a entrar a la app. Sin espacios ni acentos.</p>
         <Campo
           id="contrasena"
           etiqueta="Contraseña"
@@ -152,6 +154,6 @@ export function Registro() {
           {enviando ? 'Enviando…' : 'Enviar solicitud'}
         </Boton>
       </form>
-    </div>
+    </PantallaAcceso>
   )
 }

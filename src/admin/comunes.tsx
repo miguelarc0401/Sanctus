@@ -1,3 +1,4 @@
+import { BotonGrupo } from '../components/ElegirGrupo'
 import { Selector } from '../components/Formulario'
 import { nombreDeGrupo, useGrupos } from '../grupos/contexto'
 
@@ -16,20 +17,20 @@ export function SelectorDeDestino({ valor, onCambiar }: { valor: string; onCambi
   )
 }
 
-// Las encuestas y el temario son de un grupo: se trabaja con el elegido arriba.
+// Las encuestas y el temario son de un grupo: se trabaja con el elegido, que se puede cambiar aquí mismo.
 export function GrupoDeTrabajo() {
-  const { grupo, grupos } = useGrupos()
+  const { grupo } = useGrupos()
   if (!grupo) return null
   return (
-    <p className="rounded-xl bg-cielo-50 px-4 py-3 text-sm text-cielo-800 ring-1 ring-cielo-100">
-      Grupo: <strong>{nombreDeGrupo(grupo)}</strong>
-      {grupos.length > 1 && <span className="text-cielo-600"> · cámbialo arriba, junto a «Santa María»</span>}
-    </p>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-cielo-50 px-4 py-2.5 text-sm text-cielo-800 ring-1 ring-cielo-100">
+      <span className="text-cielo-700">Grupo:</span>
+      <BotonGrupo claro />
+    </div>
   )
 }
 
 export function Destino({ grupoId }: { grupoId: number | null }) {
   const { grupos } = useGrupos()
   const grupo = grupos.find((g) => g.id === grupoId)
-  return <span className="text-sm text-stone-500">{grupo ? grupo.santo.nombre : 'Toda la parroquia'}</span>
+  return <span className="text-sm text-stone-600">{grupo ? grupo.santo.nombre : 'Toda la parroquia'}</span>
 }

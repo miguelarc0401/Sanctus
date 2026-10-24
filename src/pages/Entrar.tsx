@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate } from 'react-router'
 import { useAuth } from '../auth/contexto'
 import { Boton, Campo, MensajeError } from '../components/Formulario'
+import { PantallaAcceso } from '../components/Pantallas'
 import { traducirError } from '../lib/errores'
 import { supabase } from '../lib/supabase'
 import { correoDeAcceso } from '../lib/usuarios'
@@ -24,13 +25,25 @@ export function Entrar() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-6 py-12">
-      <img src="/logo.svg" alt="" className="size-20 rounded-3xl shadow-lg" />
-      <h1 className="mt-5 font-serif text-5xl font-semibold text-cielo-800">Santa María</h1>
-      <p className="mt-2 text-stone-600">Inicia sesión para entrar a tu grupo</p>
-
+    <PantallaAcceso
+      titulo="Santa María"
+      subtitulo="La app de los grupos de la parroquia"
+      pie={
+        <>
+          <Link
+            to="/registro"
+            className="flex min-h-12 items-center justify-center rounded-xl bg-white px-5 py-3 font-medium text-cielo-800 ring-1 ring-stone-300 hover:bg-cielo-50"
+          >
+            ¿Eres nuevo? Crea tu cuenta
+          </Link>
+          <p className="text-sm text-stone-600">¿Olvidaste tu contraseña? Habla con tu coordinador.</p>
+        </>
+      }
+    >
+      <h2 className="font-serif text-2xl font-semibold text-cielo-800">¡Hola!</h2>
+      <p className="mt-1 text-sm text-stone-600">Inicia sesión para entrar a tu grupo.</p>
       <form
-        className="mt-8 w-full max-w-sm space-y-4"
+        className="mt-6 space-y-4"
         onSubmit={(e) => {
           e.preventDefault()
           void entrar()
@@ -62,16 +75,6 @@ export function Entrar() {
           {enviando ? 'Entrando…' : 'Entrar'}
         </Boton>
       </form>
-
-      <div className="mt-8 w-full max-w-sm space-y-3 text-center">
-        <Link
-          to="/registro"
-          className="block rounded-xl bg-white px-5 py-3 font-medium text-cielo-800 ring-1 ring-stone-300 hover:bg-cielo-50"
-        >
-          ¿Eres nuevo? Crea tu cuenta
-        </Link>
-        <p className="text-sm text-stone-500">¿Olvidaste tu contraseña? Habla con tu coordinador.</p>
-      </div>
-    </div>
+    </PantallaAcceso>
   )
 }

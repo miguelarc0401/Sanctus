@@ -107,18 +107,18 @@ export function VirtudesAdmin() {
       ) : virtudes.length === 0 ? (
         <Vacio>Todavía no hay virtudes. Programa la de esta semana con «Nueva».</Vacio>
       ) : (
-        <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {virtudes.map((virtud) => (
             <li key={virtud.id}>
               <button
                 onClick={() => setEditando(virtud)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-cielo-50"
+                className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cielo-50"
               >
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-serif text-xl font-semibold text-cielo-800">{virtud.virtud}</span>
                     {virtud.semana === estaSemana && (
-                      <span className="rounded-full bg-oro-400/25 px-2 py-0.5 text-xs font-medium text-oro-600">
+                      <span className="rounded-full bg-oro-400/25 px-2 py-0.5 text-xs font-medium text-oro-700">
                         Esta semana
                       </span>
                     )}

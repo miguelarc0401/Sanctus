@@ -198,7 +198,7 @@ export function EncuestaAdmin() {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm font-semibold tracking-wide text-stone-500 uppercase">Temas propuestos</h2>
+          <h2 className="text-sm font-semibold tracking-wider text-stone-600 uppercase">Temas propuestos</h2>
           {encuesta.fase !== 'cerrada' && (
             <button
               onClick={() => setVentana({ tipo: 'tema', tema: null })}
@@ -212,7 +212,7 @@ export function EncuestaAdmin() {
         {temas.length === 0 ? (
           <Vacio>Todavía nadie ha propuesto temas.</Vacio>
         ) : (
-          <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+          <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
             {temas.map((tema) => {
               const gano = tema.id === encuesta.tema_ganador_id
               return (
@@ -244,7 +244,7 @@ export function EncuestaAdmin() {
                   <button
                     onClick={() => setVentana({ tipo: 'tema', tema })}
                     aria-label={`Editar «${tema.titulo}»`}
-                    className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                    className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-700"
                   >
                     <Pencil className="size-4" />
                   </button>

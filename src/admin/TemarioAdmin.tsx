@@ -162,7 +162,7 @@ export function TemarioAdmin() {
       ) : charlas.length === 0 ? (
         <Vacio>El temario de este grupo está vacío. Agrega la primera charla.</Vacio>
       ) : (
-        <ol className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ol className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {charlas.map((charla, i) => (
             <li key={charla.id} className="flex items-center gap-2 py-2 pr-2 pl-4">
               <span className="w-6 shrink-0 font-serif text-xl font-semibold text-cielo-700">{i + 1}</span>

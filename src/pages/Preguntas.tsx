@@ -1,11 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Lock } from 'lucide-react'
+import { Clock, Lock, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
-import { Cargando, Tarjeta, Titulo, Vacio } from '../components/Bloques'
-import { AreaTexto, Boton, MensajeError } from '../components/Formulario'
+import { Cargando, Encabezado, Tarjeta, TituloSeccion, Vacio } from '../components/Bloques'
+import { AreaTexto, Boton, MensajeError, MensajeExito } from '../components/Formulario'
 import { useGrupos } from '../grupos/contexto'
-import { diaCorto } from '../lib/fechas'
+import { haceCuanto } from '../lib/fechas'
 import { useMisPreguntas } from '../lib/participacion'
 import { supabase } from '../lib/supabase'
 import { useEnvio } from '../lib/useEnvio'
@@ -29,10 +28,11 @@ export function Preguntas() {
 
   return (
     <div className="space-y-5">
-      <Link to="/mas" className="inline-flex items-center gap-1 text-sm text-cielo-700">
-        <ArrowLeft className="size-4" aria-hidden /> Más
-      </Link>
-      <Titulo>Pregúntale al coordinador</Titulo>
+      <Encabezado
+        titulo="Pregúntale al coordinador"
+        descripcion="Lo que te inquiete, sobre la fe o sobre el grupo. Te responde en privado."
+        volver={{ a: '/mas', texto: 'Más' }}
+      />
 
       <Tarjeta>
         <form
@@ -59,11 +59,11 @@ export function Preguntas() {
               setEnviada(false)
             }}
           />
-          <p className="flex items-center gap-1.5 text-sm text-stone-500">
+          <p className="flex items-center gap-1.5 text-sm text-stone-600">
             <Lock className="size-4 shrink-0" aria-hidden /> Sólo el coordinador la verá. Va con tu nombre.
           </p>
           {error && <MensajeError>{error}</MensajeError>}
-          {enviada && <p className="text-sm font-medium text-emerald-700">¡Listo! Tu pregunta fue enviada.</p>}
+          {enviada && <MensajeExito>¡Listo! Tu pregunta fue enviada.</MensajeExito>}
           <Boton type="submit" disabled={guardando || !texto.trim()} className="w-full">
             {guardando ? 'Enviando…' : 'Enviar pregunta'}
           </Boton>
@@ -71,26 +71,35 @@ export function Preguntas() {
       </Tarjeta>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">Mis preguntas</h2>
+        <TituloSeccion>Mis preguntas</TituloSeccion>
         {isPending ? (
           <Cargando />
         ) : preguntas.length === 0 ? (
-          <Vacio>Todavía no has hecho preguntas.</Vacio>
+          <Vacio Icono={MessageCircle}>Todavía no has hecho preguntas.</Vacio>
         ) : (
-          preguntas.map((pregunta) => (
-            <article key={pregunta.id} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200">
-              <p className="text-xs text-stone-500">{diaCorto(pregunta.creada_en)}</p>
-              <p className="mt-1 whitespace-pre-line text-stone-900">{pregunta.texto}</p>
-              {pregunta.respuesta ? (
-                <div className="mt-3 rounded-xl bg-cielo-50 p-4 ring-1 ring-cielo-100">
-                  <p className="text-sm font-medium text-cielo-800">Respuesta del coordinador</p>
-                  <p className="mt-1 whitespace-pre-line text-stone-800">{pregunta.respuesta}</p>
+          <ul className="space-y-6">
+            {preguntas.map((pregunta) => (
+              // Como una conversación: tu pregunta a la derecha y la respuesta a la izquierda.
+              <li key={pregunta.id} className="space-y-2">
+                <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-cielo-800 px-4 py-3 text-white shadow-sm">
+                  <p className="sr-only">Tu pregunta:</p>
+                  <p className="whitespace-pre-line">{pregunta.texto}</p>
+                  <p className="mt-1 text-right text-xs text-cielo-200">{haceCuanto(pregunta.creada_en)}</p>
                 </div>
-              ) : (
-                <p className="mt-3 text-sm text-oro-600">Esperando respuesta…</p>
-              )}
-            </article>
-          ))
+                {pregunta.respuesta ? (
+                  <div className="mr-auto max-w-[85%] rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-tarjeta ring-1 ring-stone-200/80">
+                    <p className="text-xs font-semibold tracking-wide text-oro-700 uppercase">Respuesta del coordinador</p>
+                    <p className="mt-1 whitespace-pre-line text-stone-800">{pregunta.respuesta}</p>
+                    {pregunta.respondida_en && <p className="mt-1 text-xs text-stone-500">{haceCuanto(pregunta.respondida_en)}</p>}
+                  </div>
+                ) : (
+                  <p className="mr-auto inline-flex items-center gap-1.5 rounded-full bg-oro-50 px-3 py-1.5 text-sm text-oro-700 ring-1 ring-oro-400/40">
+                    <Clock className="size-4" aria-hidden /> Esperando respuesta…
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>

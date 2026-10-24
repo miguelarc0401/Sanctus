@@ -136,6 +136,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 | 3. Biblioteca ✅ | Subida de libros, lector protegido, anotaciones privadas. |
 | 4. Extras ✅ | Notificaciones push, añadir eventos al calendario del teléfono y búsqueda en mis notas. La conversión automática de Word se descartó: necesita un servicio externo de pago y guardar como PDF desde Word basta. |
 | 5. Lector renovado ✅ | Subrayado en colores, tarjeta para editar, notas al margen, cinta de marcador, fondos Claro/Sepia/Noche, libro abierto en pantallas anchas, gestos, cuaderno con índice, notas y búsqueda en el libro, y biblioteca con «Seguir leyendo». |
+| 6. Interfaz renovada ✅ | Encabezados con el «manto» azul estrellado, menú lateral en computadora, saludo según la hora, ejemplos de la virtud para ir marcando, vista de mes en el calendario, temario como línea de tiempo, preguntas como conversación, panel agrupado (Comunidad · Comunicar · Formación), tamaño de letra ajustable, mejor contraste, botones más grandes y uso con teclado. |
 
 Las notificaciones push en iPhone sólo funcionan si la app está instalada en la pantalla de inicio (iOS 16.4 o posterior).
 

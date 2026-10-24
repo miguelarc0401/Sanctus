@@ -132,7 +132,7 @@ export function Grupos() {
             <li key={grupo.id}>
               <button
                 onClick={() => setEditando(grupo)}
-                className="flex w-full items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-stone-200 hover:bg-cielo-50"
+                className="flex w-full items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-tarjeta ring-1 ring-stone-200/80 transition hover:bg-cielo-50"
               >
                 <span className="flex-1">
                   <span className="block font-serif text-2xl font-semibold text-cielo-800">{grupo.santo.nombre}</span>

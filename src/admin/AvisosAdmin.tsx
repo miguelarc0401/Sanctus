@@ -96,12 +96,12 @@ export function AvisosAdmin() {
       ) : avisos.length === 0 ? (
         <Vacio>Todavía no hay avisos.</Vacio>
       ) : (
-        <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {avisos.map((aviso) => (
             <li key={aviso.id}>
               <button
                 onClick={() => setEditando(aviso)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-cielo-50"
+                className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cielo-50"
               >
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5 text-stone-900">
@@ -110,7 +110,7 @@ export function AvisosAdmin() {
                   </span>
                   <span className="block">
                     <Destino grupoId={aviso.grupo_id} />
-                    <span className="text-sm text-stone-400"> · {diaCorto(aviso.publicado_en)}</span>
+                    <span className="text-sm text-stone-500"> · {diaCorto(aviso.publicado_en)}</span>
                   </span>
                 </span>
                 <Pencil className="size-4 shrink-0 text-stone-400" aria-hidden />

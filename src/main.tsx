@@ -9,7 +9,11 @@ import { App } from './App'
 import { AuthProvider } from './auth/AuthProvider'
 import { FaltaConfiguracion } from './components/Pantallas'
 import './index.css'
+import { aplicarTamanoLetra } from './lib/apariencia'
 import { supabaseConfigurado } from './lib/supabase'
+
+// Antes de dibujar, para que la letra no cambie de tamaño al abrir la app.
+aplicarTamanoLetra()
 
 const clienteConsultas = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },

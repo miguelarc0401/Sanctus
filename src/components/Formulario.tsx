@@ -1,13 +1,15 @@
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import { CircleAlert, CircleCheck, Eye, EyeOff } from 'lucide-react'
+import {
+  useState,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react'
 
 const estiloCampo =
-  'block w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 shadow-sm outline-none transition focus:border-cielo-600 focus:ring-2 focus:ring-cielo-200'
+  'block min-h-12 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-cielo-600 focus:ring-4 focus:ring-cielo-500/15'
 
 function Etiqueta({ id, texto, ayuda }: { id?: string; texto: string; ayuda?: string }) {
   return (
@@ -20,11 +22,32 @@ function Etiqueta({ id, texto, ayuda }: { id?: string; texto: string; ayuda?: st
 
 type PropsCampo = InputHTMLAttributes<HTMLInputElement> & { etiqueta: string; ayuda?: string }
 
-export function Campo({ etiqueta, ayuda, id, ...props }: PropsCampo) {
+// Las contraseñas llevan un ojito para mostrarlas y revisar lo que se escribió.
+export function Campo({ etiqueta, ayuda, id, type, className = '', ...props }: PropsCampo) {
+  const [visible, setVisible] = useState(false)
+  const esContrasena = type === 'password'
   return (
     <div className="space-y-1.5">
       <Etiqueta id={id} texto={etiqueta} ayuda={ayuda} />
-      <input id={id} className={estiloCampo} {...props} />
+      <div className="relative">
+        <input
+          id={id}
+          type={esContrasena && visible ? 'text' : type}
+          className={`${estiloCampo} ${esContrasena ? 'pr-12' : ''} ${className}`}
+          {...props}
+        />
+        {esContrasena && (
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            aria-pressed={visible}
+            className="absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-xl text-stone-500 hover:text-cielo-700"
+          >
+            {visible ? <EyeOff className="size-5" aria-hidden /> : <Eye className="size-5" aria-hidden />}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -46,7 +69,7 @@ export function Selector({ etiqueta, id, children, ...props }: PropsSelector) {
   return (
     <div className="space-y-1.5">
       <Etiqueta id={id} texto={etiqueta} />
-      <select id={id} className={estiloCampo} {...props}>
+      <select id={id} className={`${estiloCampo} cursor-pointer`} {...props}>
         {children}
       </select>
     </div>
@@ -57,8 +80,8 @@ type PropsCasilla = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & { etiq
 
 export function Casilla({ etiqueta, id, ...props }: PropsCasilla) {
   return (
-    <label htmlFor={id} className="flex items-center gap-3 text-stone-800">
-      <input id={id} type="checkbox" className="size-5 rounded accent-cielo-800" {...props} />
+    <label htmlFor={id} className="flex min-h-11 cursor-pointer items-center gap-3 text-stone-800">
+      <input id={id} type="checkbox" className="size-5 shrink-0 cursor-pointer rounded accent-cielo-800" {...props} />
       {etiqueta}
     </label>
   )
@@ -67,7 +90,7 @@ export function Casilla({ etiqueta, id, ...props }: PropsCasilla) {
 type PropsBoton = ButtonHTMLAttributes<HTMLButtonElement> & { variante?: 'primario' | 'secundario' | 'peligro' }
 
 const estilos = {
-  primario: 'bg-cielo-800 text-white hover:bg-cielo-700',
+  primario: 'bg-cielo-800 text-white shadow-sm shadow-cielo-900/20 hover:bg-cielo-700',
   secundario: 'bg-white text-cielo-800 ring-1 ring-stone-300 hover:bg-cielo-50',
   peligro: 'bg-white text-red-700 ring-1 ring-red-200 hover:bg-red-50',
 }
@@ -75,7 +98,7 @@ const estilos = {
 export function Boton({ variante = 'primario', className = '', ...props }: PropsBoton) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${estilos[variante]} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 font-medium transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 ${estilos[variante]} ${className}`}
       {...props}
     />
   )
@@ -83,8 +106,18 @@ export function Boton({ variante = 'primario', className = '', ...props }: Props
 
 export function MensajeError({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200">
-      {children}
+    <p role="alert" className="flex items-start gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200">
+      <CircleAlert className="mt-px size-4 shrink-0" aria-hidden />
+      <span>{children}</span>
+    </p>
+  )
+}
+
+export function MensajeExito({ children }: { children: ReactNode }) {
+  return (
+    <p role="status" className="flex items-start gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
+      <CircleCheck className="mt-px size-4 shrink-0" aria-hidden />
+      <span>{children}</span>
     </p>
   )
 }

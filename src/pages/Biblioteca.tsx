@@ -1,7 +1,7 @@
-import { ChevronRight, Search } from 'lucide-react'
+import { BookOpen, ChevronRight, Quote, Search } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router'
-import { Cargando, Segmentos, Titulo, Vacio } from '../components/Bloques'
+import { Link, useSearchParams } from 'react-router'
+import { Cargando, Encabezado, Segmentos, Vacio } from '../components/Bloques'
 import { useGrupos } from '../grupos/contexto'
 import {
   colorDe,
@@ -69,7 +69,7 @@ function Libros({ grupoId }: { grupoId: number }) {
   const [haceNada] = useState(() => Date.now() - DIAS_NUEVO * 86_400_000)
 
   if (isPending) return <Cargando />
-  if (libros.length === 0) return <Vacio>Todavía no hay libros para tu grupo.</Vacio>
+  if (libros.length === 0) return <Vacio Icono={BookOpen}>Todavía no hay libros para tu grupo.</Vacio>
 
   // El libro que se leyó más recientemente.
   const reciente = libros
@@ -136,7 +136,7 @@ function MisNotas() {
 
   if (isPending) return <Cargando />
   if (notas.length === 0) {
-    return <Vacio>Cuando guardes frases o escribas notas en un libro, aparecerán aquí. Sólo tú las ves.</Vacio>
+    return <Vacio Icono={Quote}>Cuando guardes frases o escribas notas en un libro, aparecerán aquí. Sólo tú las ves.</Vacio>
   }
 
   const buscada = normalizar(busqueda.trim())
@@ -154,17 +154,17 @@ function MisNotas() {
           placeholder="Buscar en mis frases y notas"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          className="block w-full rounded-xl border border-stone-300 bg-white py-3 pr-4 pl-12 text-base shadow-sm outline-none focus:border-cielo-600 focus:ring-2 focus:ring-cielo-200"
+          className="block min-h-12 w-full rounded-xl border border-stone-300 bg-white py-3 pr-4 pl-12 text-base shadow-sm outline-none placeholder:text-stone-500 focus:border-cielo-600 focus:ring-4 focus:ring-cielo-500/15"
         />
       </label>
-      <div className="flex gap-2">
+      <div role="group" aria-label="Mostrar" className="flex gap-2">
         {FILTROS.map((f) => (
           <button
             key={f.valor}
             onClick={() => setFiltro(f.valor)}
             aria-pressed={filtro === f.valor}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-              filtro === f.valor ? 'bg-cielo-800 text-white' : 'bg-stone-200/70 text-stone-700 hover:bg-stone-200'
+            className={`min-h-10 rounded-full px-3.5 text-sm font-medium transition ${
+              filtro === f.valor ? 'bg-cielo-800 text-white shadow-sm' : 'bg-white text-stone-700 ring-1 ring-stone-300 hover:bg-cielo-50'
             }`}
           >
             {f.texto} <span className="opacity-70">{notas.filter(f.incluye).length}</span>
@@ -188,11 +188,11 @@ function ListaDeNotas({ notas }: { notas: NotaConLibro[] }) {
           <li key={nota.id}>
             <Link
               to={`/biblioteca/${nota.libro_id}?pagina=${nota.pagina}&marca=${nota.id}`}
-              className="flex gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-stone-200 hover:bg-cielo-50"
+              className="flex gap-3 rounded-2xl bg-white p-4 shadow-tarjeta ring-1 ring-stone-200/80 transition hover:bg-cielo-50"
             >
               <span aria-hidden className="w-1 shrink-0 rounded-full" style={{ background: colorDe(nota) }} />
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 text-xs text-stone-500">
+                <span className="flex items-center gap-1.5 text-xs text-stone-600">
                   <Icono className="size-3.5 text-oro-600" aria-hidden /> {nota.libro.titulo} · pág. {nota.pagina}
                 </span>
                 {nota.texto && <span className="mt-1.5 block font-serif text-lg leading-snug text-cielo-900 italic">«{nota.texto}»</span>}
@@ -207,26 +207,30 @@ function ListaDeNotas({ notas }: { notas: NotaConLibro[] }) {
 }
 
 export function Biblioteca() {
-  const { grupo } = useGrupos()
-  const [vista, setVista] = useState<'libros' | 'notas'>('libros')
+  const { grupo, cargando } = useGrupos()
+  const [parametros, setParametros] = useSearchParams()
+  const vista = parametros.get('vista') === 'notas' ? 'notas' : 'libros'
 
   return (
     <div className="space-y-5">
-      <Titulo>Biblioteca</Titulo>
+      <Encabezado titulo="Biblioteca" descripcion="Libros para reflexionar, con tus subrayados y notas privadas." />
       <Segmentos
+        etiqueta="Biblioteca"
         opciones={[
           { valor: 'libros', texto: 'Libros' },
           { valor: 'notas', texto: 'Mis frases y notas' },
         ]}
         valor={vista}
-        onCambiar={setVista}
+        onCambiar={(v) => setParametros(v === 'libros' ? {} : { vista: v }, { replace: true })}
       />
       {vista === 'notas' ? (
         <MisNotas />
+      ) : cargando ? (
+        <Cargando />
       ) : grupo ? (
         <Libros grupoId={grupo.id} />
       ) : (
-        <Vacio>Cuando pertenezcas a un grupo, aquí verás sus libros.</Vacio>
+        <Vacio Icono={BookOpen}>Cuando pertenezcas a un grupo, aquí verás sus libros.</Vacio>
       )}
     </div>
   )

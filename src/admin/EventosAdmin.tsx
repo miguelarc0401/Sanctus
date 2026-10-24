@@ -132,12 +132,12 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
 
 function ListaEventos({ eventos, onEditar }: { eventos: Evento[]; onEditar: (e: Evento) => void }) {
   return (
-    <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+    <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
       {eventos.map((evento) => (
         <li key={evento.id}>
           <button
             onClick={() => onEditar(evento)}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-cielo-50"
+            className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cielo-50"
           >
             <span className="min-w-0 flex-1 space-y-0.5">
               <EtiquetaTipo tipo={evento.tipo} />
@@ -178,7 +178,7 @@ export function EventosAdmin() {
       ) : (
         <>
           <section className="space-y-2">
-            <h2 className="px-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">Próximos</h2>
+            <h2 className="px-1 text-sm font-semibold tracking-wider text-stone-600 uppercase">Próximos</h2>
             {proximos.length > 0 ? (
               <ListaEventos eventos={proximos} onEditar={setEditando} />
             ) : (
@@ -187,7 +187,7 @@ export function EventosAdmin() {
           </section>
           {pasados.length > 0 && (
             <section className="space-y-2">
-              <h2 className="px-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">Anteriores</h2>
+              <h2 className="px-1 text-sm font-semibold tracking-wider text-stone-600 uppercase">Anteriores</h2>
               <ListaEventos eventos={pasados} onEditar={setEditando} />
             </section>
           )}

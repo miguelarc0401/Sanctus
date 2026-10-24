@@ -82,12 +82,12 @@ export function Santos() {
       ) : santos.length === 0 ? (
         <Vacio>No hay santos en la lista.</Vacio>
       ) : (
-        <ul className="divide-y divide-stone-200 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {santos.map((santo) => (
             <li key={santo.id}>
               <button
                 onClick={() => setEditando(santo)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-cielo-50"
+                className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cielo-50"
               >
                 <span className="flex-1">
                   <span className="block text-stone-900">{santo.nombre}</span>
