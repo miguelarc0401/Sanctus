@@ -99,14 +99,14 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 **Lectura:**
 - Visor propio con PDF.js, página por página, sin botón de descargar ni de imprimir y sin menú contextual.
 - El archivo se pide con un enlace firmado que caduca en minutos.
-- Marca de agua con el nombre del lector en cada página.
+- Sin marca de agua (se quitó a pedido del administrador).
 - Recuerda la última página leída.
 
 **Anotaciones (privadas):**
 - Subrayar texto, poner una nota a un fragmento o a una página, y guardar frases («rescatar») en «Mis frases».
 - Las páginas escaneadas son imágenes, sin texto seleccionable: en ellas sólo se permiten notas por página y marcadores.
 
-**Límite:** todo esto dificulta la descarga, pero no la impide; una captura de pantalla siempre es posible. La marca de agua es lo que más disuade.
+**Límite:** todo esto dificulta la descarga, pero no la impide; una captura de pantalla siempre es posible.
 
 ## 8. Pantallas
 

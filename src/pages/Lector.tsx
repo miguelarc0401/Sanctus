@@ -17,7 +17,6 @@ import {
 import { TextLayer, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
-import { useAuth } from '../auth/contexto'
 import { Cargando, Vacio } from '../components/Bloques'
 import { AreaTexto, Boton, Campo, MensajeError } from '../components/Formulario'
 import { Hoja } from '../components/Hoja'
@@ -42,17 +41,40 @@ const COLORES: Partial<Record<TipoAnotacion, string>> = {
   frase: 'bg-sky-300/45',
 }
 
-// Nombre de quien lee repetido en diagonal sobre la página.
-function MarcaDeAgua({ texto }: { texto: string }) {
+const CLAVE_CONSEJO = 'consejo-subrayar-oculto'
+
+function leerConsejoOculto() {
+  try {
+    return localStorage.getItem(CLAVE_CONSEJO) === '1'
+  } catch {
+    return false
+  }
+}
+
+// Explica cómo subrayar hasta que la persona lo cierre.
+function ConsejoSubrayar() {
+  const [oculto, setOculto] = useState(leerConsejoOculto)
+  if (oculto) return null
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-10 overflow-hidden select-none">
-      <div className="absolute -inset-1/2 flex rotate-[-30deg] flex-wrap content-start gap-x-14 gap-y-20 opacity-[0.13]">
-        {Array.from({ length: 80 }, (_, i) => (
-          <span key={i} className="text-sm font-semibold whitespace-nowrap text-cielo-900">
-            {texto}
-          </span>
-        ))}
-      </div>
+    <div className="relative mx-auto mb-3 max-w-xl rounded-xl bg-cielo-50 py-3 pr-10 pl-4 text-sm text-cielo-900 ring-1 ring-cielo-100">
+      <p>
+        <strong>Para subrayar:</strong> mantén presionado el texto (o selecciónalo con el mouse) y elige{' '}
+        <strong>Subrayar</strong>, <strong>Nota</strong> o <strong>Frase</strong>. Tus subrayados y notas sólo los ves tú.
+      </p>
+      <button
+        onClick={() => {
+          setOculto(true)
+          try {
+            localStorage.setItem(CLAVE_CONSEJO, '1')
+          } catch {
+            // Sin almacenamiento sólo se oculta mientras el libro esté abierto.
+          }
+        }}
+        aria-label="Entendido"
+        className="absolute top-2 right-2 rounded-full p-1 text-cielo-600 hover:bg-cielo-100"
+      >
+        <X className="size-4" />
+      </button>
     </div>
   )
 }
@@ -62,7 +84,6 @@ function PaginaPdf({
   numero,
   ancho,
   anotaciones,
-  marca,
   onSeleccion,
   onTocarAnotacion,
   onSinTexto,
@@ -71,7 +92,6 @@ function PaginaPdf({
   numero: number
   ancho: number
   anotaciones: Anotacion[]
-  marca: string
   onSeleccion: (s: Seleccion | null) => void
   onTocarAnotacion: (a: Anotacion) => void
   onSinTexto: (sinTexto: boolean) => void
@@ -183,7 +203,6 @@ function PaginaPdf({
         )}
       </div>
       <div ref={capa} className="textLayer" />
-      <MarcaDeAgua texto={marca} />
     </div>
   )
 }
@@ -304,7 +323,6 @@ export function Lector() {
   const [parametros] = useSearchParams()
   const navegar = useNavigate()
   const clienteConsultas = useQueryClient()
-  const { perfil } = useAuth()
   const { data: libro, isPending: cargandoLibro } = useLibro(id)
   const { data: progreso } = useProgreso()
   const { data: anotaciones = [] } = useAnotaciones(id)
@@ -435,8 +453,6 @@ export function Lector() {
     )
   }
 
-  const marca = `${perfil?.nombre ?? ''} · ${perfil?.acceso ?? ''}`
-
   return (
     <div
       className="lector-protegido flex min-h-dvh flex-col bg-stone-200/60"
@@ -474,12 +490,12 @@ export function Lector() {
           <Vacio>No se pudo abrir el libro. Revisa tu conexión e inténtalo de nuevo.</Vacio>
         ) : pdf && ancho > 0 && progreso !== undefined ? (
           <>
+            {!sinTexto && <ConsejoSubrayar />}
             <PaginaPdf
               pdf={pdf}
               numero={actual}
               ancho={ancho}
               anotaciones={delaPagina}
-              marca={marca}
               onSeleccion={setSeleccion}
               onTocarAnotacion={(anotacion) => setVentana({ tipo: 'anotacion', anotacion })}
               onSinTexto={setSinTexto}
