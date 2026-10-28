@@ -288,7 +288,7 @@ export function LibrosAdmin() {
               <li key={libro.id}>
                 <button onClick={() => setEditando(libro)} className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cielo-50">
                   {portada ? (
-                    <img src={portada} alt="" className="h-16 w-12 shrink-0 rounded object-cover ring-1 ring-stone-200" />
+                    <img src={portada} alt="" crossOrigin="anonymous" className="h-16 w-12 shrink-0 rounded object-cover ring-1 ring-stone-200" />
                   ) : (
                     <span className="flex h-16 w-12 shrink-0 items-center justify-center rounded bg-cielo-100 text-cielo-700">
                       <BookOpen className="size-5" aria-hidden />

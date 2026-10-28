@@ -16,6 +16,7 @@ Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos,
 | Formato de los libros | Mayormente PDF; también Word o sólo imágenes. |
 | Santos | Catálogo editable por el administrador (empezó con 24 santos). Al crear un grupo se elige su santo. |
 | Cuentas de niños | A nombre de los niños, sin importar la edad. Entran con un usuario (no necesitan correo). |
+| Sin internet | La app abre y muestra lo último que se descargó (se guarda en el teléfono tres semanas). Los libros ya abiertos (los últimos 10) se pueden leer y anotar: las anotaciones y la página en que se va se guardan en el teléfono y se suben solas al volver la conexión. Todo se borra al cerrar sesión (si hay notas sin subir, se pregunta antes). Lo demás (preguntas, votos, panel) necesita conexión. |
 
 ## 3. Supuestos (se pueden cambiar)
 
@@ -99,7 +100,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 
 **Lectura:**
 - Visor propio con PDF.js, página por página, sin botón de descargar ni de imprimir y sin menú contextual.
-- El archivo se pide con un enlace firmado que caduca en minutos. Mientras se descarga se ve la portada con el porcentaje; el último libro abierto se queda en memoria (nunca en disco) para no descargarlo otra vez al volver.
+- El archivo se pide con un enlace firmado que caduca en minutos. Mientras se descarga se ve la portada con el porcentaje; los últimos 10 libros abiertos se guardan en el teléfono (para leerlos sin internet) y se borran al cerrar sesión.
 - Sin marca de agua (se quitó a pedido del administrador).
 - Recuerda la última página leída; la biblioteca muestra «Seguir leyendo» con el último libro.
 - Se pasa de página con botones, flechas del teclado, deslizando el dedo o con el deslizador de abajo (que muestra el capítulo). Las páginas vecinas se dibujan por adelantado.

@@ -1,40 +1,42 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useRef } from 'react'
-import { datos } from '../lib/consultas'
-import type { Anotacion } from '../lib/libros'
-import { supabase } from '../lib/supabase'
+import { anotarCambio, idActual, type CambiosAnotacion, type NuevaAnotacion } from '../lib/cambiosPendientes'
+import type { Anotacion, NotaConLibro } from '../lib/libros'
 
-export type NuevaAnotacion = Pick<Anotacion, 'pagina' | 'tipo'> &
-  Partial<Pick<Anotacion, 'texto' | 'posicion' | 'nota' | 'color'>>
+// Lo que aparece en «Mis frases y notas» de la biblioteca (lo mismo que pide useMisNotas).
+const esNota = (a: Anotacion) => a.tipo === 'frase' || a.tipo === 'nota' || a.nota !== null
 
-type Cambios = Partial<Pick<Anotacion, 'nota' | 'color' | 'tipo'>>
+let ultimoProvisional = 0
+// Número negativo y único mientras la anotación no se sube.
+const nuevoProvisional = () => (ultimoProvisional = Math.min(-Date.now(), ultimoProvisional - 1))
 
-// Crear, cambiar y borrar anotaciones de un libro. Los cambios se ven al instante y
-// se deshacen solos si no se pudieron guardar.
-export function useAnotar(libroId: number) {
+// Crear, cambiar y borrar anotaciones de un libro. Los cambios se ven al instante, se guardan en el
+// teléfono y se suben en cuanto hay internet (ver lib/cambiosPendientes).
+export function useAnotar(libroId: number, titulo: string) {
   const cliente = useQueryClient()
   const clave = ['anotaciones', libroId]
-  // Mientras se guarda, una anotación nueva lleva un número negativo provisional;
-  // aquí se apunta cuál le tocó al guardarse y qué guardados siguen en camino.
-  const reales = useRef(new Map<number, number>())
-  const pendientes = useRef(new Map<number, Promise<Anotacion>>())
 
-  const cambiarLista = (cambio: (lista: Anotacion[]) => Anotacion[]) =>
-    cliente.setQueryData<Anotacion[]>(clave, (lista = []) => cambio(lista))
-  const avisarMisNotas = () => void cliente.invalidateQueries({ queryKey: ['anotaciones', 'todas'] })
-  const es = (a: Anotacion, id: number) => a.id === id || a.id === reales.current.get(id)
-
-  async function idReal(id: number) {
-    if (id >= 0) return id
-    return reales.current.get(id) ?? (await pendientes.current.get(id))?.id ?? id
+  // Cambia la lista del libro y, con ella, «Mis frases y notas».
+  function cambiarLista(cambio: (lista: Anotacion[]) => Anotacion[]) {
+    const lista = cambio(cliente.getQueryData<Anotacion[]>(clave) ?? [])
+    cliente.setQueryData(clave, lista)
+    cliente.setQueryData<NotaConLibro[]>(
+      ['anotaciones', 'todas'],
+      (todas) =>
+        todas &&
+        [
+          ...todas.filter((n) => n.libro_id !== libroId),
+          ...lista.filter(esNota).map((a) => ({ ...a, libro: { titulo } })),
+        ].sort((a, b) => b.creada_en.localeCompare(a.creada_en)),
+    )
   }
 
-  // Busca una anotación aunque se la conozca por su número provisional.
+  // Una anotación nueva se sigue encontrando por su número provisional después de subirse.
+  const es = (a: Anotacion, id: number) => a.id === id || a.id === idActual(id)
   const buscar = (lista: Anotacion[], id: number) => lista.find((a) => es(a, id))
 
   function crear(nueva: NuevaAnotacion) {
     const provisional: Anotacion = {
-      id: -Date.now(),
+      id: nuevoProvisional(),
       libro_id: libroId,
       texto: null,
       posicion: null,
@@ -43,59 +45,19 @@ export function useAnotar(libroId: number) {
       creada_en: new Date().toISOString(),
       ...nueva,
     }
-    void cliente.cancelQueries({ queryKey: clave })
     cambiarLista((lista) => [...lista, provisional])
-    const guardada = datos<Anotacion>(
-      supabase
-        .from('anotaciones')
-        .insert({ libro_id: libroId, ...nueva })
-        .select()
-        .single(),
-    )
-    pendientes.current.set(provisional.id, guardada)
-    guardada
-      .then((fila) => {
-        reales.current.set(provisional.id, fila.id)
-        // Conserva lo que se haya cambiado mientras se guardaba (por ejemplo, el color).
-        cambiarLista((lista) => lista.map((a) => (a.id === provisional.id ? { ...a, id: fila.id } : a)))
-      })
-      .catch(() => cambiarLista((lista) => lista.filter((a) => a.id !== provisional.id)))
-      .finally(() => {
-        pendientes.current.delete(provisional.id)
-        avisarMisNotas()
-      })
-    return { provisional, guardada }
+    anotarCambio({ que: 'crear', id: provisional.id, libro: libroId, anotacion: { ...nueva } })
+    return provisional
   }
 
-  async function cambiar(id: number, cambios: Cambios) {
-    const anterior = buscar(cliente.getQueryData<Anotacion[]>(clave) ?? [], id)
+  function cambiar(id: number, cambios: CambiosAnotacion) {
     cambiarLista((lista) => lista.map((a) => (es(a, id) ? { ...a, ...cambios } : a)))
-    try {
-      const { error } = await supabase
-        .from('anotaciones')
-        .update(cambios)
-        .eq('id', await idReal(id))
-      if (error) throw error
-      avisarMisNotas()
-    } catch (e) {
-      if (anterior) cambiarLista((lista) => lista.map((a) => (es(a, id) ? { ...anterior, id: a.id } : a)))
-      throw e
-    }
+    anotarCambio({ que: 'cambiar', id, cambios })
   }
 
-  async function borrar(anotacion: Anotacion) {
+  function borrar(anotacion: Anotacion) {
     cambiarLista((lista) => lista.filter((a) => !es(a, anotacion.id)))
-    try {
-      const { error } = await supabase
-        .from('anotaciones')
-        .delete()
-        .eq('id', await idReal(anotacion.id))
-      if (error) throw error
-      avisarMisNotas()
-    } catch (e) {
-      cambiarLista((lista) => [...lista, anotacion])
-      throw e
-    }
+    anotarCambio({ que: 'borrar', id: anotacion.id })
   }
 
   // Vuelve a crear una anotación borrada (para «Deshacer»).

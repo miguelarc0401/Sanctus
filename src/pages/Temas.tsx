@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router'
 import { Cargando, Encabezado, EtiquetaFase, Segmentos, Tarjeta, Vacio } from '../components/Bloques'
 import { BarrasDeResultados } from '../components/Encuestas'
 import { AreaTexto, Boton, Campo, MensajeError, MensajeExito } from '../components/Formulario'
+import { TextoConEnlaces } from '../components/TextoConEnlaces'
 import { useGrupos } from '../grupos/contexto'
 import { fechaLarga, hoyISO } from '../lib/fechas'
 import { useCharlas, useEncuestas, useMiVoto, useResultados, useTemas } from '../lib/participacion'
@@ -244,7 +245,7 @@ function Temario({ grupoId }: { grupoId: number }) {
                 {pasada && <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">Ya fue</span>}
               </div>
               <h2 className="mt-1 font-serif text-2xl leading-tight font-semibold text-cielo-800">{charla.titulo}</h2>
-              {charla.objetivo && <p className="mt-1 whitespace-pre-line text-stone-700">{charla.objetivo}</p>}
+              {charla.objetivo && <TextoConEnlaces className="mt-1 text-stone-700">{charla.objetivo}</TextoConEnlaces>}
               <ul className="mt-4 space-y-2 rounded-xl bg-crema p-3 text-sm ring-1 ring-stone-200/80">
                 <li className="flex items-start gap-2">
                   <ClipboardList className="mt-0.5 size-4 shrink-0 text-cielo-600" aria-hidden />

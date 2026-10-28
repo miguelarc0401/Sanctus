@@ -16,6 +16,7 @@ import { useAuth } from '../auth/contexto'
 import { Insignia, Lista, TituloSeccion } from '../components/Bloques'
 import { AjusteNotificaciones } from '../components/Notificaciones'
 import { guardarTamanoLetra, leerTamanoLetra, type TamanoLetra } from '../lib/apariencia'
+import { hayCambiosPendientes } from '../lib/cambiosPendientes'
 import { esAppInstalada, esIOS, instalar, usePuedeInstalar } from '../lib/instalar'
 import { usePreguntasSinResponder, useRespuestasNuevas, useSolicitudesPendientes } from '../lib/pendientes'
 import { useTituloDocumento } from '../lib/useTituloDocumento'
@@ -196,7 +197,15 @@ export function Mas() {
       </Seccion>
 
       <button
-        onClick={() => void cerrarSesion()}
+        onClick={() => {
+          // Lo que no se subió se borra con la sesión: mejor preguntar.
+          const cancelar =
+            hayCambiosPendientes() &&
+            !confirm(
+              'Hay notas de tus libros que todavía no se suben porque no hay internet. Si cierras sesión ahora, se perderán. ¿Cerrar sesión de todos modos?',
+            )
+          if (!cancelar) void cerrarSesion()
+        }}
         className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 font-medium text-red-700 shadow-tarjeta ring-1 ring-stone-200/80 transition hover:bg-red-50"
       >
         <LogOut className="size-5" aria-hidden /> Cerrar sesión

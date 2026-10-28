@@ -164,7 +164,7 @@ function Notas({ anotaciones, onIr }: { anotaciones: Anotacion[]; onIr: (a: Anot
                     {a.nota && (
                       <span className={`flex gap-1.5 text-sm text-(--lector-tenue) ${a.texto ? 'mt-1' : ''}`}>
                         <MessageSquareText className="mt-0.5 size-4 shrink-0" aria-hidden />
-                        <span className="line-clamp-4 whitespace-pre-line">{a.nota}</span>
+                        <span className="line-clamp-4 min-w-0 whitespace-pre-line wrap-break-word">{a.nota}</span>
                       </span>
                     )}
                   </span>

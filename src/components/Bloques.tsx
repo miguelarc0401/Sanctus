@@ -1,6 +1,7 @@
-import { ArrowLeft, Plus, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, Plus, WifiOff, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { useConexion } from '../lib/conexion'
 import { FASES, TIPOS_EVENTO, type FaseEncuesta, type TipoEvento } from '../lib/tipos'
 import { useTituloDocumento } from '../lib/useTituloDocumento'
 
@@ -45,8 +46,16 @@ export function Vacio({ children, Icono }: { children: ReactNode; Icono?: Lucide
   )
 }
 
-// Siluetas grises mientras llegan los datos.
+// Siluetas grises mientras llegan los datos. Sin internet no van a llegar: se avisa en su lugar.
 export function Cargando({ filas = 3 }: { filas?: number }) {
+  const conexion = useConexion()
+  if (!conexion) {
+    return (
+      <Vacio Icono={WifiOff}>
+        Esto todavía no se ha guardado en este teléfono. Aparecerá cuando vuelvas a tener internet.
+      </Vacio>
+    )
+  }
   return (
     <div role="status" className="space-y-3 py-1">
       <span className="sr-only">Cargando…</span>
@@ -160,6 +169,24 @@ export function EtiquetaTipo({ tipo }: { tipo: TipoEvento }) {
 export function EtiquetaFase({ fase }: { fase: FaseEncuesta }) {
   const { nombre, estilo } = FASES[fase]
   return <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${estilo}`}>{nombre}</span>
+}
+
+// Franja que avisa que no hay internet y que lo que se ve es lo último que se descargó.
+export function SinConexion() {
+  const conexion = useConexion()
+  if (conexion) return null
+  return (
+    <p
+      role="status"
+      className="mb-5 flex items-start gap-2.5 rounded-2xl bg-stone-800 px-4 py-3 text-sm text-stone-100 shadow-tarjeta"
+    >
+      <WifiOff className="mt-0.5 size-4 shrink-0 text-oro-400" aria-hidden />
+      <span>
+        <strong className="font-semibold text-white">Sin internet.</strong> Estás viendo lo último que se guardó en este
+        teléfono. Los libros que ya abriste se pueden leer y anotar; para lo demás necesitas conexión.
+      </span>
+    </p>
+  )
 }
 
 // Numerito de pendientes junto a una opción del menú.

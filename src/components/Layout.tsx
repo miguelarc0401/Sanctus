@@ -5,7 +5,7 @@ import { useAuth } from '../auth/contexto'
 import { useGrupos } from '../grupos/contexto'
 import { useEncuestas } from '../lib/participacion'
 import { usePreguntasSinResponder, useRespuestasNuevas, useSolicitudesPendientes } from '../lib/pendientes'
-import { Insignia } from './Bloques'
+import { Insignia, SinConexion } from './Bloques'
 import { BotonGrupo } from './ElegirGrupo'
 
 type Seccion = { a: string; texto: string; Icono: LucideIcon; aviso?: string }
@@ -147,6 +147,7 @@ export function Layout() {
         tabIndex={-1}
         className="mx-auto max-w-2xl px-4 pt-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] outline-none lg:max-w-3xl lg:px-10 lg:pt-12 lg:pb-16"
       >
+        <SinConexion />
         <Outlet />
       </main>
 

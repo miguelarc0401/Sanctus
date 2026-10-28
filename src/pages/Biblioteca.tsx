@@ -1,11 +1,13 @@
-import { BookOpen, ChevronRight, Quote, Search } from 'lucide-react'
+import { BookOpen, ChevronRight, CircleCheck, Quote, Search, WifiOff } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Cargando, Encabezado, Segmentos, Vacio } from '../components/Bloques'
 import { useGrupos } from '../grupos/contexto'
+import { useConexion } from '../lib/conexion'
 import {
   colorDe,
   ICONOS_ANOTACION,
+  librosGuardados,
   urlPortada,
   useLibros,
   useMisNotas,
@@ -24,7 +26,7 @@ function Portada({ libro, className = '' }: { libro: Libro; className?: string }
       className={`relative block aspect-[3/4] overflow-hidden rounded-l-[3px] rounded-r-lg bg-white shadow-[0_2px_4px_rgb(0_0_0/0.08),0_10px_24px_-10px_rgb(0_0_0/0.35)] ring-1 ring-black/5 ${className}`}
     >
       {portada ? (
-        <img src={portada} alt="" loading="lazy" className="size-full object-cover object-top" />
+        <img src={portada} alt="" loading="lazy" crossOrigin="anonymous" className="size-full object-cover object-top" />
       ) : (
         <span className="flex size-full flex-col justify-center bg-gradient-to-br from-cielo-700 to-cielo-900 p-3 pl-5">
           <span className="border-y border-oro-400/70 py-2 font-serif text-lg leading-tight font-semibold text-white">{libro.titulo}</span>
@@ -65,6 +67,8 @@ function SeguirLeyendo({ libro, pagina }: { libro: Libro; pagina: number }) {
 function Libros({ grupoId }: { grupoId: number }) {
   const { data: libros = [], isPending } = useLibros(grupoId)
   const { data: progreso } = useProgreso()
+  const conexion = useConexion()
+  const guardados = librosGuardados()
   // Los libros agregados después de esta fecha (y sin abrir) llevan la etiqueta «Nuevo».
   const [haceNada] = useState(() => Date.now() - DIAS_NUEVO * 86_400_000)
 
@@ -84,9 +88,12 @@ function Libros({ grupoId }: { grupoId: number }) {
           const pagina = progreso?.get(libro.id)?.pagina
           const avance = pagina && libro.num_paginas ? Math.round((pagina / libro.num_paginas) * 100) : null
           const nuevo = !pagina && new Date(libro.creado_en).getTime() > haceNada
+          const enTelefono = guardados.includes(libro.archivo)
+          // Sin internet sólo se pueden abrir los que ya están en el teléfono.
+          const fueraDeAlcance = !conexion && !enTelefono
           return (
             <li key={libro.id}>
-              <Link to={`/biblioteca/${libro.id}`} className="group block">
+              <Link to={`/biblioteca/${libro.id}`} className={`group block ${fueraDeAlcance ? 'opacity-55' : ''}`}>
                 <span className="relative block transition duration-300 group-hover:-translate-y-1">
                   <Portada libro={libro} />
                   {nuevo && (
@@ -104,6 +111,17 @@ function Libros({ grupoId }: { grupoId: number }) {
                     </span>
                     <span className="text-xs text-stone-500 tabular-nums">{avance} %</span>
                   </span>
+                )}
+                {enTelefono ? (
+                  <span className="mt-1 flex items-center gap-1 text-xs text-cielo-700">
+                    <CircleCheck className="size-3.5" aria-hidden /> En tu teléfono
+                  </span>
+                ) : (
+                  fueraDeAlcance && (
+                    <span className="mt-1 flex items-center gap-1 text-xs text-stone-600">
+                      <WifiOff className="size-3.5" aria-hidden /> Necesita internet
+                    </span>
+                  )
                 )}
               </Link>
             </li>
@@ -196,7 +214,7 @@ function ListaDeNotas({ notas }: { notas: NotaConLibro[] }) {
                   <Icono className="size-3.5 text-oro-600" aria-hidden /> {nota.libro.titulo} · pág. {nota.pagina}
                 </span>
                 {nota.texto && <span className="mt-1.5 block font-serif text-lg leading-snug text-cielo-900 italic">«{nota.texto}»</span>}
-                {nota.nota && <span className="mt-1.5 block whitespace-pre-line text-stone-700">{nota.nota}</span>}
+                {nota.nota && <span className="mt-1.5 block whitespace-pre-line wrap-break-word text-stone-700">{nota.nota}</span>}
               </span>
             </Link>
           </li>

@@ -131,6 +131,10 @@ function ControlDeFase({ encuesta, cuantosTemas, onCambio }: { encuesta: Encuest
 
 type Ventana = { tipo: 'encuesta' } | { tipo: 'tema'; tema: Tema | null }
 
+type FilaAutor = { tema_id: number; autor: string | null }
+
+const autorPorTema = (filas: FilaAutor[]) => new Map(filas.map((f) => [f.tema_id, f.autor ?? 'Cuenta eliminada']))
+
 export function EncuestaAdmin() {
   const id = Number(useParams().id)
   const navegar = useNavigate()
@@ -146,12 +150,8 @@ export function EncuestaAdmin() {
   const { data: votos = new Map<number, number>() } = useResultados(id, true)
   const { data: autores = new Map<number, string>() } = useQuery({
     queryKey: ['temas', id, 'autores'],
-    queryFn: async () => {
-      const filas = await datos<{ tema_id: number; autor: string | null }[]>(
-        supabase.rpc('autores_de_temas', { encuesta: id }),
-      )
-      return new Map(filas.map((f) => [f.tema_id, f.autor ?? 'Cuenta eliminada']))
-    },
+    queryFn: () => datos<FilaAutor[]>(supabase.rpc('autores_de_temas', { encuesta: id })),
+    select: autorPorTema,
   })
 
   const recargar = () => {

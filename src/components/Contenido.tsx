@@ -5,6 +5,7 @@ import { aFechaISO, cuandoEs, diaLargo, diaSemana, haceCuanto, hora, mesCorto, s
 import type { Aviso, Evento, Virtud } from '../lib/tipos'
 import { EtiquetaTipo } from './Bloques'
 import { Hoja } from './Hoja'
+import { TextoConEnlaces } from './TextoConEnlaces'
 
 const mismoDia = (a: string, b: string) => aFechaISO(new Date(a)) === aFechaISO(new Date(b))
 
@@ -91,11 +92,12 @@ export function FilaEvento({ evento }: { evento: Evento }) {
           <Clock className="size-4 shrink-0" aria-hidden /> {horario(evento)}
         </p>
         {evento.lugar && (
-          <p className="flex items-center gap-1.5 text-sm text-stone-600">
-            <MapPin className="size-4 shrink-0" aria-hidden /> {evento.lugar}
-          </p>
+          <div className="flex items-start gap-1.5 text-sm text-stone-600">
+            <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <TextoConEnlaces className="min-w-0">{evento.lugar}</TextoConEnlaces>
+          </div>
         )}
-        {evento.descripcion && <p className="pt-1 text-sm whitespace-pre-line text-stone-600">{evento.descripcion}</p>}
+        {evento.descripcion && <TextoConEnlaces className="pt-1 text-sm text-stone-600">{evento.descripcion}</TextoConEnlaces>}
         <AgregarAlCalendario evento={evento} />
       </div>
     </li>
@@ -117,7 +119,7 @@ export function TarjetaAviso({ aviso }: { aviso: Aviso }) {
         {aviso.grupo_id === null && <span className="text-stone-500">· Para toda la parroquia</span>}
       </div>
       <h3 className="mt-1 font-semibold text-pretty text-stone-900">{aviso.titulo}</h3>
-      <p className="mt-1.5 whitespace-pre-line text-stone-700">{aviso.texto}</p>
+      <TextoConEnlaces className="mt-1.5 text-stone-700">{aviso.texto}</TextoConEnlaces>
     </article>
   )
 }
@@ -202,7 +204,14 @@ export function TarjetaVirtud({ virtud }: { virtud: Virtud | null }) {
         <div className="relative">
           <p className="mt-2 font-serif text-5xl leading-none font-semibold">{virtud.virtud}</p>
           <p className="mt-2 text-sm text-cielo-200">{semanaDel(virtud.semana)}</p>
-          {virtud.explicacion && <p className="mt-4 text-lg leading-relaxed whitespace-pre-line text-cielo-50">{virtud.explicacion}</p>}
+          {virtud.explicacion && (
+            <TextoConEnlaces
+              className="mt-4 text-lg leading-relaxed text-cielo-50"
+              claseEnlace="text-oro-400 decoration-oro-400/50 hover:text-white"
+            >
+              {virtud.explicacion}
+            </TextoConEnlaces>
+          )}
           {virtud.ejemplos.length > 0 && <EjemplosDeLaVirtud virtud={virtud} />}
         </div>
       ) : (

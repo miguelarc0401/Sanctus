@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Bookmark, Highlighter, Quote, StickyNote, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../auth/contexto'
+import { leerDelServidor } from './cambiosPendientes'
+import { hayConexion } from './conexion'
 import { datos } from './consultas'
 import { clave, supabase, url } from './supabase'
 
@@ -98,18 +100,26 @@ export function useLibro(id: number) {
 
 export type Progreso = { pagina: number; leido_en: string }
 
+export type FilaProgreso = { libro_id: number; pagina: number; actualizado_en: string }
+
+// Fuera del componente para que React Query no rehaga el mapa en cada render.
+const porLibro = (filas: FilaProgreso[]) =>
+  new Map<number, Progreso>(filas.map((f) => [f.libro_id, { pagina: f.pagina, leido_en: f.actualizado_en }]))
+
 // Página en la que se quedó la persona en cada libro y cuándo lo leyó.
+// Se guardan las filas (un Map no se puede guardar en el teléfono) y se convierten al leerlas.
 export function useProgreso() {
   const { perfil } = useAuth()
   return useQuery({
     queryKey: ['progreso', perfil?.id],
     enabled: !!perfil,
-    queryFn: async () => {
-      const filas = await datos<{ libro_id: number; pagina: number; actualizado_en: string }[]>(
-        supabase.from('progreso').select('libro_id, pagina, actualizado_en').eq('usuario_id', perfil!.id),
-      )
-      return new Map<number, Progreso>(filas.map((f) => [f.libro_id, { pagina: f.pagina, leido_en: f.actualizado_en }]))
-    },
+    queryFn: () =>
+      leerDelServidor('progreso', () =>
+        datos<FilaProgreso[]>(
+          supabase.from('progreso').select('libro_id, pagina, actualizado_en').eq('usuario_id', perfil!.id),
+        ),
+      ),
+    select: porLibro,
   })
 }
 
@@ -117,8 +127,10 @@ export function useAnotaciones(libroId: number) {
   return useQuery({
     queryKey: ['anotaciones', libroId],
     queryFn: () =>
-      datos<Anotacion[]>(
-        supabase.from('anotaciones').select('*').eq('libro_id', libroId).order('pagina').order('creada_en'),
+      leerDelServidor('anotaciones', () =>
+        datos<Anotacion[]>(
+          supabase.from('anotaciones').select('*').eq('libro_id', libroId).order('pagina').order('creada_en'),
+        ),
       ),
   })
 }
@@ -128,29 +140,97 @@ export function useMisNotas() {
   return useQuery({
     queryKey: ['anotaciones', 'todas'],
     queryFn: () =>
-      datos<NotaConLibro[]>(
-        supabase
-          .from('anotaciones')
-          .select('*, libro:libros(titulo)')
-          .or('tipo.eq.frase,tipo.eq.nota,nota.not.is.null')
-          .order('creada_en', { ascending: false }),
+      leerDelServidor('anotaciones', () =>
+        datos<NotaConLibro[]>(
+          supabase
+            .from('anotaciones')
+            .select('*, libro:libros(titulo)')
+            .or('tipo.eq.frase,tipo.eq.nota,nota.not.is.null')
+            .order('creada_en', { ascending: false }),
+        ),
       ),
   })
 }
 
-// El último libro abierto se queda en memoria (nunca en disco) para no volver a descargarlo
-// si la persona sale a la biblioteca y regresa.
+// El último libro abierto se queda también en memoria, para abrirlo al instante si la persona sale a
+// la biblioteca y regresa.
 let ultimoLibro: { archivo: string; datos: Uint8Array } | null = null
 
-export function olvidarLibroAbierto() {
-  ultimoLibro = null
+// Los libros que se abren se guardan en el teléfono para leerlos sin internet: los últimos
+// MAX_GUARDADOS, en una caja propia de la app (no en la caché del navegador, de donde no se podrían
+// borrar). Se borran al cerrar sesión. Cada archivo subido tiene un nombre nuevo, así que un libro
+// guardado nunca queda viejo.
+const CAJA = 'libros-guardados'
+const CLAVE_LISTA = 'libros-guardados'
+const MAX_GUARDADOS = 10
+
+const direccion = (archivo: string) => `/libros-guardados/${encodeURIComponent(archivo)}`
+const hayCajas = () => typeof caches !== 'undefined'
+
+// Los archivos guardados en el teléfono, del más reciente al más viejo.
+export function librosGuardados(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(CLAVE_LISTA) ?? '[]') as string[]
+  } catch {
+    return []
+  }
 }
 
-// Descarga el PDF sin dejarlo en la caché del navegador (en un teléfono compartido no queda una copia).
-// alAvanzar recibe la fracción descargada (de 0 a 1) cuando se conoce el tamaño.
+async function anotarGuardado(archivo: string, caja: Cache) {
+  const lista = [archivo, ...librosGuardados().filter((a) => a !== archivo)]
+  for (const viejo of lista.slice(MAX_GUARDADOS)) await caja.delete(direccion(viejo))
+  localStorage.setItem(CLAVE_LISTA, JSON.stringify(lista.slice(0, MAX_GUARDADOS)))
+}
+
+async function leerGuardado(archivo: string) {
+  if (!hayCajas()) return null
+  try {
+    const caja = await caches.open(CAJA)
+    const respuesta = await caja.match(direccion(archivo))
+    if (!respuesta) return null
+    const datosLibro = new Uint8Array(await respuesta.arrayBuffer())
+    // Pasa a ser el más reciente, para que no sea de los primeros en borrarse.
+    await anotarGuardado(archivo, caja).catch(() => {})
+    return datosLibro
+  } catch {
+    return null
+  }
+}
+
+async function guardarEnTelefono(archivo: string, datosLibro: Uint8Array<ArrayBuffer>) {
+  if (!hayCajas()) return
+  try {
+    const caja = await caches.open(CAJA)
+    await caja.put(direccion(archivo), new Response(datosLibro, { headers: { 'Content-Type': 'application/pdf' } }))
+    await anotarGuardado(archivo, caja)
+  } catch {
+    // Sin espacio en el teléfono: el libro se sigue leyendo, pero sólo con internet.
+  }
+}
+
+// Al cerrar sesión, para que en un teléfono compartido no quede ninguna copia.
+export function olvidarLibros() {
+  ultimoLibro = null
+  try {
+    localStorage.removeItem(CLAVE_LISTA)
+  } catch {
+    // No había lista.
+  }
+  if (hayCajas()) void caches.delete(CAJA).catch(() => {})
+}
+
+// Abre el PDF desde la memoria o el teléfono; si no está, lo descarga (sin dejarlo en la caché del
+// navegador) y lo guarda en el teléfono. alAvanzar recibe la fracción descargada (de 0 a 1) cuando se
+// conoce el tamaño.
 export async function descargarLibro(archivo: string, alAvanzar?: (fraccion: number) => void) {
   // PDF.js se queda con los datos que recibe, así que siempre se entrega una copia.
   if (ultimoLibro?.archivo === archivo) return ultimoLibro.datos.slice()
+  const guardado = await leerGuardado(archivo)
+  if (guardado) {
+    ultimoLibro = { archivo, datos: guardado }
+    return guardado.slice()
+  }
+  if (!hayConexion()) throw new Error('Sin internet no se puede descargar el libro.')
   const { data } = await supabase.auth.getSession()
   const respuesta = await fetch(`${url}/storage/v1/object/authenticated/libros/${encodeURIComponent(archivo)}`, {
     cache: 'no-store',
@@ -175,6 +255,7 @@ export async function descargarLibro(archivo: string, alAvanzar?: (fraccion: num
     posicion += pedazo.length
   }
   ultimoLibro = { archivo, datos: datosLibro }
+  void guardarEnTelefono(archivo, datosLibro)
   return datosLibro.slice()
 }
 

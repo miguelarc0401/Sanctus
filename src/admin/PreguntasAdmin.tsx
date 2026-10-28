@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Cargando, EncabezadoAdmin, Segmentos, Vacio } from '../components/Bloques'
 import { AreaTexto, Boton, MensajeError, PieFormulario } from '../components/Formulario'
 import { Hoja } from '../components/Hoja'
+import { TextoConEnlaces } from '../components/TextoConEnlaces'
 import { borrarFila, datos } from '../lib/consultas'
 import { diaCorto } from '../lib/fechas'
 import { notificar } from '../lib/notificaciones'
@@ -38,7 +39,7 @@ function FormRespuesta({ pregunta, onListo }: { pregunta: PreguntaConAutor; onLi
         <p className="text-sm text-stone-500">
           {pregunta.autor?.nombre ?? 'Cuenta eliminada'} · {diaCorto(pregunta.creada_en)}
         </p>
-        <p className="mt-1 whitespace-pre-line text-stone-900">{pregunta.texto}</p>
+        <p className="mt-1 whitespace-pre-line wrap-break-word text-stone-900">{pregunta.texto}</p>
       </div>
       <AreaTexto
         id="respuesta"
@@ -107,10 +108,10 @@ export function PreguntasAdmin() {
               )}
               <span className="text-stone-500">{diaCorto(pregunta.creada_en)}</span>
             </p>
-            <p className="mt-2 whitespace-pre-line text-stone-800">{pregunta.texto}</p>
+            <p className="mt-2 whitespace-pre-line wrap-break-word text-stone-800">{pregunta.texto}</p>
             {pregunta.respuesta && (
               <div className="mt-3 rounded-xl bg-cielo-50 p-3 text-stone-700 ring-1 ring-cielo-100">
-                <p className="whitespace-pre-line">{pregunta.respuesta}</p>
+                <TextoConEnlaces>{pregunta.respuesta}</TextoConEnlaces>
               </div>
             )}
             <Boton

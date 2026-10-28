@@ -3,6 +3,7 @@ import { Clock, Lock, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Cargando, Encabezado, Tarjeta, TituloSeccion, Vacio } from '../components/Bloques'
 import { AreaTexto, Boton, MensajeError, MensajeExito } from '../components/Formulario'
+import { TextoConEnlaces } from '../components/TextoConEnlaces'
 import { useGrupos } from '../grupos/contexto'
 import { haceCuanto } from '../lib/fechas'
 import { useMisPreguntas } from '../lib/participacion'
@@ -83,13 +84,13 @@ export function Preguntas() {
               <li key={pregunta.id} className="space-y-2">
                 <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-cielo-800 px-4 py-3 text-white shadow-sm">
                   <p className="sr-only">Tu pregunta:</p>
-                  <p className="whitespace-pre-line">{pregunta.texto}</p>
+                  <p className="whitespace-pre-line wrap-break-word">{pregunta.texto}</p>
                   <p className="mt-1 text-right text-xs text-cielo-200">{haceCuanto(pregunta.creada_en)}</p>
                 </div>
                 {pregunta.respuesta ? (
                   <div className="mr-auto max-w-[85%] rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-tarjeta ring-1 ring-stone-200/80">
                     <p className="text-xs font-semibold tracking-wide text-oro-700 uppercase">Respuesta del coordinador</p>
-                    <p className="mt-1 whitespace-pre-line text-stone-800">{pregunta.respuesta}</p>
+                    <TextoConEnlaces className="mt-1 text-stone-800">{pregunta.respuesta}</TextoConEnlaces>
                     {pregunta.respondida_en && <p className="mt-1 text-xs text-stone-500">{haceCuanto(pregunta.respondida_en)}</p>}
                   </div>
                 ) : (

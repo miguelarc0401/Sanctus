@@ -28,8 +28,9 @@ import {
   type Rect,
   type TipoAnotacion,
 } from '../lib/libros'
+import { guardarProgreso, useCambiosPendientes } from '../lib/cambiosPendientes'
+import { useConexion } from '../lib/conexion'
 import { abrirPdf } from '../lib/pdf'
-import { supabase } from '../lib/supabase'
 
 type Seleccion = { pagina: number; texto: string; rects: Rect[] }
 
@@ -126,6 +127,7 @@ function Apertura({ titulo, portada, avance }: { titulo: string; portada: string
         <img
           src={portada}
           alt=""
+          crossOrigin="anonymous"
           className="w-36 animate-[respirar_2.4s_ease-in-out_infinite] rounded-l-sm rounded-r-lg shadow-2xl ring-1 ring-black/10"
         />
       ) : (
@@ -174,7 +176,9 @@ export function Lector() {
   const { pdf, avance, error: errorPdf } = useLibroAbierto(libro?.archivo)
   const indice = useIndice(pdf)
   const busqueda = useBusqueda(pdf)
-  const anotar = useAnotar(id)
+  const anotar = useAnotar(id, libro?.titulo ?? '')
+  const conexion = useConexion()
+  const sinSubir = useCambiosPendientes()
   const [ajustes, cambiarAjustes] = useAjustes()
   useColorDeBarra(ajustes.tema)
 
@@ -287,14 +291,10 @@ export function Lector() {
     (escala, foco) => cambiarZoom((ancho * escala) / sencilla, foco),
   )
 
-  // Recuerda la página después de un momento sin cambiarla.
+  // Recuerda la página después de un momento sin cambiarla (sin internet, en cuanto vuelva).
   useEffect(() => {
     if (!pdf) return
-    const espera = window.setTimeout(() => {
-      void supabase.rpc('guardar_progreso', { libro: id, pagina: actual }).then(() => {
-        void clienteConsultas.invalidateQueries({ queryKey: ['progreso'] })
-      })
-    }, 1500)
+    const espera = window.setTimeout(() => guardarProgreso(clienteConsultas, id, actual), 1500)
     return () => window.clearTimeout(espera)
   }, [pdf, id, actual, clienteConsultas])
 
@@ -409,7 +409,6 @@ export function Lector() {
   // ─── Anotar ──────────────────────────────────────────────────────────────
   const avisar = (texto: string, deshacer?: () => void) => setAviso({ texto, deshacer })
   const cerrarAviso = useCallback(() => setAviso(null), [])
-  const sinConexion = () => avisar('No se pudo guardar. Revisa tu conexión.')
   const marcarSinTexto = useCallback(
     (numero: number, vacia: boolean) => setSinTexto((s) => (s[numero] === vacia ? s : { ...s, [numero]: vacia })),
     [],
@@ -417,16 +416,15 @@ export function Lector() {
 
   function desdeSeleccion(tipo: 'subrayado' | 'frase', color: ColorAnotacion | null) {
     if (!seleccion) return null
-    const { provisional, guardada } = anotar.crear({
+    const creada = anotar.crear({
       pagina: seleccion.pagina,
       tipo,
       texto: seleccion.texto,
       posicion: seleccion.rects,
       color,
     })
-    guardada.catch(sinConexion)
     limpiarSeleccion()
-    return { provisional, guardada }
+    return creada
   }
 
   function subrayar(color: ColorAnotacion) {
@@ -436,37 +434,28 @@ export function Lector() {
 
   function guardarFrase() {
     const creada = desdeSeleccion('frase', null)
-    creada?.guardada.then(
-      (fila) => avisar('Guardada en «Mis frases y notas»', () => void anotar.borrar(fila).catch(sinConexion)),
-      () => {},
-    )
+    if (creada) avisar('Guardada en «Mis frases y notas»', () => anotar.borrar(creada))
   }
 
   function notaDesdeSeleccion() {
     const creada = desdeSeleccion('subrayado', ajustes.color)
-    if (creada) setVentana({ tipo: 'ficha', id: creada.provisional.id, pagina: creada.provisional.pagina, enfocar: true })
+    if (creada) setVentana({ tipo: 'ficha', id: creada.id, pagina: creada.pagina, enfocar: true })
   }
 
   function borrar(anotacion: Anotacion) {
     setVentana(null)
-    anotar
-      .borrar(anotacion)
-      .then(() => avisar(BORRADA[anotacion.tipo], () => void anotar.restaurar(anotacion).guardada.catch(sinConexion)))
-      .catch(sinConexion)
+    anotar.borrar(anotacion)
+    avisar(BORRADA[anotacion.tipo], () => anotar.restaurar(anotacion))
   }
 
   const marcador = anotaciones.find((a) => a.tipo === 'marcador' && a.pagina === actual)
   function alternarMarcador() {
     if (marcador) {
-      anotar
-        .borrar(marcador)
-        .then(() => avisar('Quitaste la cinta de esta página'))
-        .catch(sinConexion)
+      anotar.borrar(marcador)
+      avisar('Quitaste la cinta de esta página')
     } else {
-      anotar
-        .crear({ pagina: actual, tipo: 'marcador' })
-        .guardada.then(() => avisar('Página marcada con una cinta. La encuentras en el Cuaderno.'))
-        .catch(sinConexion)
+      anotar.crear({ pagina: actual, tipo: 'marcador' })
+      avisar('Página marcada con una cinta. La encuentras en el Cuaderno.')
     }
   }
 
@@ -537,7 +526,11 @@ export function Lector() {
         <div className="flex min-h-full w-max min-w-full flex-col items-center justify-center p-2">
           {errorPdf ? (
             <div className="max-w-sm px-4 text-center">
-              <p className="text-(--lector-tenue)">No se pudo abrir el libro. Revisa tu conexión e inténtalo de nuevo.</p>
+              <p className="text-(--lector-tenue)">
+                {conexion
+                  ? 'No se pudo abrir el libro. Revisa tu conexión e inténtalo de nuevo.'
+                  : 'Este libro todavía no está guardado en tu teléfono. Ábrelo una vez con internet y después podrás leerlo sin conexión.'}
+              </p>
               <button onClick={() => location.reload()} className="mt-4 rounded-xl bg-cielo-800 px-5 py-2.5 font-medium text-white">
                 Reintentar
               </button>
@@ -570,7 +563,14 @@ export function Lector() {
       <BarraSuperior
         visible={barras}
         titulo={libro.titulo}
-        subtitulo={capitulo ?? libro.autor ?? (total ? `${total} páginas` : '')}
+        // Sin internet, lo que se anota se guarda en el teléfono y se sube después (corto: cabe en un teléfono).
+        subtitulo={
+          !conexion
+            ? 'Sin internet · se guarda aquí'
+            : sinSubir > 0
+              ? 'Subiendo tus notas…'
+              : (capitulo ?? libro.autor ?? (total ? `${total} páginas` : ''))
+        }
         cuentaNotas={notas.length}
         onVolver={() => navegar('/biblioteca')}
         onBuscar={() => {
@@ -656,17 +656,17 @@ export function Lector() {
           pagina={ventana.pagina}
           enfocar={ventana.enfocar}
           onGuardarNota={async (nota) => {
-            if (fichaAnotacion) await anotar.cambiar(fichaAnotacion.id, { nota: nota || null })
+            if (fichaAnotacion) anotar.cambiar(fichaAnotacion.id, { nota: nota || null })
             else if (nota) {
-              await anotar.crear({ pagina: ventana.pagina, tipo: 'nota', nota }).guardada
+              anotar.crear({ pagina: ventana.pagina, tipo: 'nota', nota })
               avisar('Nota guardada')
             }
           }}
           onColor={(color) => {
             cambiarAjustes({ color })
-            anotar.cambiar(fichaAnotacion!.id, { color, tipo: 'subrayado' }).catch(sinConexion)
+            anotar.cambiar(fichaAnotacion!.id, { color, tipo: 'subrayado' })
           }}
-          onFrase={(esFrase) => anotar.cambiar(fichaAnotacion!.id, { tipo: esFrase ? 'frase' : 'subrayado' }).catch(sinConexion)}
+          onFrase={(esFrase) => anotar.cambiar(fichaAnotacion!.id, { tipo: esFrase ? 'frase' : 'subrayado' })}
           onBorrar={() => borrar(fichaAnotacion!)}
           onCerrar={() => setVentana(null)}
         />

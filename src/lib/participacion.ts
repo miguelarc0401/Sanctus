@@ -43,17 +43,17 @@ export function useMiVoto(encuestaId: number, activo: boolean) {
   })
 }
 
+type FilaResultado = { tema_id: number; votos: number }
+
+const votosPorTema = (filas: FilaResultado[]) => new Map(filas.map((f) => [f.tema_id, f.votos]))
+
 // Votos por tema. Los miembros sólo los reciben cuando la encuesta está cerrada.
 export function useResultados(encuestaId: number, activo: boolean) {
   return useQuery({
     queryKey: ['resultados', encuestaId],
     enabled: activo,
-    queryFn: async () => {
-      const filas = await datos<{ tema_id: number; votos: number }[]>(
-        supabase.rpc('resultados_encuesta', { encuesta: encuestaId }),
-      )
-      return new Map(filas.map((f) => [f.tema_id, f.votos]))
-    },
+    queryFn: () => datos<FilaResultado[]>(supabase.rpc('resultados_encuesta', { encuesta: encuestaId })),
+    select: votosPorTema,
   })
 }
 
