@@ -1,4 +1,4 @@
-// Envía notificaciones al teléfono (Web Push) cuando el administrador publica algo.
+// Envía notificaciones al teléfono (Web Push) cuando el administrador publica algo o alguien manda un mensaje.
 // La clave privada VAPID se lee de la bóveda de Supabase; la pública es la misma que usa la app.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -29,7 +29,7 @@ const supabase = createClient(Deno.env.get('SUPABASE_URL')!, claveSecreta(), {
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
-type Mensaje = { titulo: string; texto: string; url: string; etiqueta: string }
+type Mensaje = { titulo: string; texto: string; url: string; etiqueta: string; renotificar?: boolean }
 
 // Cuentas aprobadas de un grupo, o de toda la parroquia si no hay grupo.
 async function cuentasDe(grupoId: number | null) {
@@ -69,14 +69,6 @@ async function preparar(tipo: string, id: number, zona: string, yo: string): Pro
       { titulo: `Nuevo en el calendario: ${data.titulo}`, texto: cuando, url: '/calendario', etiqueta: `evento-${id}` },
     ]
   }
-  if (tipo === 'respuesta') {
-    const { data } = await supabase.from('preguntas').select('autor_id').eq('id', id).maybeSingle()
-    if (!data) return null
-    return [
-      [data.autor_id],
-      { titulo: 'Te respondieron', texto: 'El coordinador respondió tu pregunta.', url: '/preguntas', etiqueta: `respuesta-${id}` },
-    ]
-  }
   if (tipo === 'encuesta') {
     const { data } = await supabase.from('encuestas').select('grupo_id, titulo, fase').eq('id', id).maybeSingle()
     if (!data || data.fase === 'cerrada') return null
@@ -86,17 +78,33 @@ async function preparar(tipo: string, id: number, zona: string, yo: string): Pro
   return null
 }
 
+// A quién le llega un mensaje del chat: a la otra persona, con el nombre de quien escribe y el principio del texto.
+// Los mensajes de una misma persona se juntan en una sola notificación, que vuelve a sonar con cada uno.
+async function prepararMensaje(id: number, yo: string, nombre: string): Promise<[string[], Mensaje] | null> {
+  const { data } = await supabase.from('mensajes').select('de, para, texto').eq('id', id).maybeSingle()
+  if (!data || data.de !== yo) return null
+  const texto = data.texto.length > 140 ? `${data.texto.slice(0, 139)}…` : data.texto
+  return [[data.para], { titulo: nombre, texto, url: `/mensajes/${yo}`, etiqueta: `mensaje-${yo}`, renotificar: true }]
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   const { data: sesion } = await supabase.auth.getUser(token)
   if (!sesion.user) return responder({ error: 'Tu sesión expiró. Vuelve a entrar.' }, 401)
-  const { data: perfil } = await supabase.from('perfiles').select('es_admin').eq('id', sesion.user.id).maybeSingle()
-  if (!perfil?.es_admin) return responder({ error: 'Sólo el administrador puede enviar notificaciones.' }, 403)
-
+  const { data: perfil } = await supabase.from('perfiles').select('es_admin, nombre, estado').eq('id', sesion.user.id).maybeSingle()
   const { tipo, id, zona } = (await req.json()) as { tipo: string; id?: number; zona?: string }
-  const preparado = await preparar(tipo, Number(id), zona || 'America/Mexico_City', sesion.user.id)
+
+  // Un mensaje lo avisa quien lo escribió (miembro o coordinador); lo demás, sólo un administrador.
+  let preparado: [string[], Mensaje] | null
+  if (tipo === 'mensaje') {
+    if (perfil?.estado !== 'aprobado') return responder({ error: 'Tu cuenta no está activa.' }, 403)
+    preparado = await prepararMensaje(Number(id), sesion.user.id, perfil.nombre)
+  } else {
+    if (!perfil?.es_admin) return responder({ error: 'Sólo el administrador puede enviar notificaciones.' }, 403)
+    preparado = await preparar(tipo, Number(id), zona || 'America/Mexico_City', sesion.user.id)
+  }
   if (!preparado) return responder({ enviadas: 0, total: 0 })
   const [cuentas, mensaje] = preparado
 

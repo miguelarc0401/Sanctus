@@ -21,31 +21,19 @@ export function useSolicitudesPendientes() {
   })
 }
 
-// Preguntas que el administrador aún no responde.
-export function usePreguntasSinResponder() {
+// Mensajes que me escribieron y todavía no leo.
+export function useMensajesSinLeer() {
   const { perfil } = useAuth()
   return useQuery({
-    queryKey: ['preguntas', 'sin-responder'],
-    enabled: perfil?.es_admin === true,
-    queryFn: () =>
-      contar(supabase.from('preguntas').select('id', { count: 'exact', head: true }).is('respuesta', null)),
-  })
-}
-
-// Respuestas a mis preguntas que todavía no he leído.
-export function useRespuestasNuevas() {
-  const { perfil } = useAuth()
-  return useQuery({
-    queryKey: ['preguntas', 'nuevas', perfil?.id],
+    queryKey: ['mensajes', 'sin-leer', perfil?.id],
     enabled: !!perfil,
     queryFn: () =>
       contar(
         supabase
-          .from('preguntas')
+          .from('mensajes')
           .select('id', { count: 'exact', head: true })
-          .eq('autor_id', perfil!.id)
-          .not('respuesta', 'is', null)
-          .eq('respuesta_vista', false),
+          .eq('para', perfil!.id)
+          .is('leido_en', null),
       ),
   })
 }

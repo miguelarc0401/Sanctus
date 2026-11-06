@@ -87,7 +87,7 @@ function FormGrupo({
                   '¿Eliminar este grupo? También se borran sus avisos, eventos y virtudes propios. Las cuentas de los miembros no se borran.'
                 if (!confirm(aviso)) return
                 void enviar(async () => {
-                  await borrarFila('grupos', grupo.id)
+                  await borrarFila('grupos', grupo.id, grupo.nombre)
                   onListo()
                 })
               }

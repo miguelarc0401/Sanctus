@@ -1,10 +1,10 @@
 import {
   ChevronRight,
-  CircleHelp,
   Download,
   KeyRound,
   LogOut,
   Megaphone,
+  MessageCircle,
   Share,
   Shield,
   Type,
@@ -18,7 +18,7 @@ import { AjusteNotificaciones } from '../components/Notificaciones'
 import { guardarTamanoLetra, leerTamanoLetra, type TamanoLetra } from '../lib/apariencia'
 import { hayCambiosPendientes } from '../lib/cambiosPendientes'
 import { esAppInstalada, esIOS, instalar, usePuedeInstalar } from '../lib/instalar'
-import { usePreguntasSinResponder, useRespuestasNuevas, useSolicitudesPendientes } from '../lib/pendientes'
+import { useMensajesSinLeer, useSolicitudesPendientes } from '../lib/pendientes'
 import { useTituloDocumento } from '../lib/useTituloDocumento'
 
 function IconoOpcion({ Icono }: { Icono: LucideIcon }) {
@@ -132,9 +132,8 @@ function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) 
 
 export function Mas() {
   const { sesion, perfil, cerrarSesion } = useAuth()
-  const { data: respuestas } = useRespuestasNuevas()
+  const { data: sinLeer } = useMensajesSinLeer()
   const { data: solicitudes = 0 } = useSolicitudesPendientes()
-  const { data: preguntas = 0 } = usePreguntasSinResponder()
   const iniciales = (perfil?.nombre ?? '')
     .split(' ')
     .filter(Boolean)
@@ -172,7 +171,7 @@ export function Mas() {
               texto="Panel de administración"
               detalle="Miembros, avisos, calendario y más"
               Icono={Shield}
-              insignia={solicitudes + preguntas}
+              insignia={solicitudes}
             />
           </Lista>
         </Seccion>
@@ -180,8 +179,14 @@ export function Mas() {
 
       <Seccion titulo="Tu grupo">
         <Lista>
+          <Opcion
+            a="/mensajes"
+            texto="Mensajes"
+            detalle={perfil?.es_admin ? 'Conversaciones privadas con cada persona' : 'Escríbele en privado a un coordinador'}
+            Icono={MessageCircle}
+            insignia={sinLeer}
+          />
           <Opcion a="/avisos" texto="Avisos" Icono={Megaphone} />
-          <Opcion a="/preguntas" texto="Pregúntale al coordinador" detalle="En privado, sólo la ve el coordinador" Icono={CircleHelp} insignia={respuestas} />
         </Lista>
       </Seccion>
 

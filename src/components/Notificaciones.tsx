@@ -107,7 +107,7 @@ export function AjusteNotificaciones() {
       )}
       {estado === 'apagadas' && (
         <>
-          <p className="mt-3 text-sm text-stone-600">Entérate al momento de avisos, eventos, votaciones y respuestas a tus preguntas.</p>
+          <p className="mt-3 text-sm text-stone-600">Entérate al momento de avisos, eventos, votaciones y mensajes nuevos.</p>
           <Boton className="mt-3 w-full" disabled={trabajando} onClick={() => void hacer(activarNotificaciones)}>
             <Bell className="size-4" aria-hidden /> Activar notificaciones
           </Boton>

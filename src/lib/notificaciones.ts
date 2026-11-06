@@ -72,9 +72,10 @@ export async function desactivarNotificaciones() {
   await suscripcion.unsubscribe()
 }
 
-type Tipo = 'aviso' | 'evento' | 'respuesta' | 'encuesta' | 'prueba'
+type Tipo = 'aviso' | 'evento' | 'mensaje' | 'encuesta' | 'prueba'
 
-// Avisa a los miembros. Si falla, lo publicado ya quedó guardado: sólo no llega la notificación.
+// Avisa a los miembros (o, con un mensaje, a la otra persona). Si falla, lo publicado ya quedó guardado:
+// sólo no llega la notificación.
 export async function notificar(tipo: Tipo, id?: number) {
   try {
     return await llamarFuncion<{ enviadas: number; total: number }>('notificar', {

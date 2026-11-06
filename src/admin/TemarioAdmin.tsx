@@ -118,7 +118,7 @@ function FormCharla({
             ? () => {
                 if (!confirm(`¿Quitar «${charla.titulo}» del temario?`)) return
                 void enviar(async () => {
-                  await borrarFila('charlas', charla.id)
+                  await borrarFila('charlas', charla.id, charla.titulo)
                   onListo()
                 })
               }

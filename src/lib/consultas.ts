@@ -1,4 +1,5 @@
 import type { PostgrestError } from '@supabase/supabase-js'
+import { ofrecerDeshacer } from './deshacer'
 import { supabase } from './supabase'
 
 type Respuesta<T> = { data: T | null; error: PostgrestError | null }
@@ -28,9 +29,11 @@ export async function insertarFila(tabla: string, valores: Record<string, unknow
   return id
 }
 
-export async function borrarFila(tabla: string, id: number) {
+// Borra algo del panel y ofrece «Deshacer» (la base de datos lo guarda 30 días en el historial).
+export async function borrarFila(tabla: string, id: number, nombre?: string) {
   const { error } = await supabase.from(tabla).delete().eq('id', id)
   if (error) throw error
+  ofrecerDeshacer({ tabla, id, nombre })
 }
 
 // Llama a la función de Supabase que da de alta, cambia contraseñas y elimina miembros.

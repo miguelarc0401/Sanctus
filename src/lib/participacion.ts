@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../auth/contexto'
 import { datos } from './consultas'
 import { supabase } from './supabase'
-import { COLUMNAS_TEMA, type Charla, type Encuesta, type Pregunta, type Tema } from './tipos'
+import { COLUMNAS_TEMA, type Charla, type Encuesta, type Tema } from './tipos'
 
 export function useEncuestas(grupoId: number | null) {
   return useQuery({
@@ -69,18 +69,6 @@ export function useCharlas(grupoId: number | null) {
           .eq('grupo_id', grupoId!)
           .order('orden')
           .order('fecha', { nullsFirst: false }),
-      ),
-  })
-}
-
-export function useMisPreguntas() {
-  const { perfil } = useAuth()
-  return useQuery({
-    queryKey: ['preguntas', 'mias', perfil?.id],
-    enabled: !!perfil,
-    queryFn: () =>
-      datos<Pregunta[]>(
-        supabase.from('preguntas').select('*').eq('autor_id', perfil!.id).order('creada_en', { ascending: false }),
       ),
   })
 }

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, KeyRound, Pencil, RefreshCw, UserCheck, UserX } from 'lucide-react'
+import { Check, Copy, KeyRound, MessageCircle, Pencil, RefreshCw, UserCheck, UserX } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { useAuth } from '../auth/contexto'
 import { Cargando, EncabezadoAdmin, Vacio } from '../components/Bloques'
 import { Boton, Campo, Casilla, MensajeError, PieFormulario, Selector } from '../components/Formulario'
@@ -273,6 +274,14 @@ function FormMiembro({
         void enviar(guardar)
       }}
     >
+      {!esUnoMismo && miembro.estado === 'aprobado' && (
+        <Link
+          to={`/mensajes/${miembro.id}`}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-medium text-cielo-800 ring-1 ring-stone-300 transition hover:bg-cielo-50"
+        >
+          <MessageCircle className="size-5" aria-hidden /> Enviarle un mensaje
+        </Link>
+      )}
       <Campo id="nombre" etiqueta="Nombre completo" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
       <Campo
         id="acceso"

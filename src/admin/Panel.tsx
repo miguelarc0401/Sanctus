@@ -3,10 +3,11 @@ import {
   CalendarDays,
   ChevronRight,
   Church,
-  CircleHelp,
   ClipboardList,
   Crown,
+  History,
   Megaphone,
+  MessageCircle,
   Sparkles,
   UserPlus,
   Users,
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router'
 import { Encabezado, Insignia, TituloSeccion } from '../components/Bloques'
-import { usePreguntasSinResponder, useSolicitudesPendientes } from '../lib/pendientes'
+import { useMensajesSinLeer, useSolicitudesPendientes } from '../lib/pendientes'
 
 type Seccion = { a: string; titulo: string; descripcion: string; Icono: LucideIcon; insignia?: number }
 
@@ -24,6 +25,7 @@ const TONOS = {
   comunidad: 'bg-cielo-100 text-cielo-700',
   comunicar: 'bg-oro-400/20 text-oro-700',
   formacion: 'bg-emerald-100 text-emerald-800',
+  historial: 'bg-stone-200/80 text-stone-700',
 }
 
 function Mosaico({ seccion, tono }: { seccion: Seccion; tono: string }) {
@@ -61,17 +63,17 @@ function Bloque({ titulo, tono, secciones }: { titulo: string; tono: string; sec
   )
 }
 
-function PorAtender({ solicitudes, preguntas }: { solicitudes: number; preguntas: number }) {
-  if (!solicitudes && !preguntas) {
+function PorAtender({ solicitudes, mensajes }: { solicitudes: number; mensajes: number }) {
+  if (!solicitudes && !mensajes) {
     return (
       <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
-        <Sparkles className="size-4 shrink-0" aria-hidden /> Todo al día: no hay solicitudes ni preguntas pendientes.
+        <Sparkles className="size-4 shrink-0" aria-hidden /> Todo al día: no hay solicitudes ni mensajes sin leer.
       </p>
     )
   }
   const tarjetas = [
     { a: '/admin/miembros', cuenta: solicitudes, una: 'solicitud de cuenta', varias: 'solicitudes de cuenta', Icono: UserPlus },
-    { a: '/admin/preguntas', cuenta: preguntas, una: 'pregunta sin responder', varias: 'preguntas sin responder', Icono: CircleHelp },
+    { a: '/mensajes', cuenta: mensajes, una: 'mensaje sin leer', varias: 'mensajes sin leer', Icono: MessageCircle },
   ].filter((t) => t.cuenta > 0)
 
   return (
@@ -93,20 +95,20 @@ function PorAtender({ solicitudes, preguntas }: { solicitudes: number; preguntas
 
 export function Panel() {
   const { data: solicitudes = 0 } = useSolicitudesPendientes()
-  const { data: preguntas = 0 } = usePreguntasSinResponder()
+  const { data: mensajes = 0 } = useMensajesSinLeer()
 
   return (
     <div className="space-y-7">
       <Encabezado titulo="Panel" descripcion="Todo lo de la parroquia, en un solo lugar." volver={{ a: '/mas', texto: 'Más' }} />
 
-      <PorAtender solicitudes={solicitudes} preguntas={preguntas} />
+      <PorAtender solicitudes={solicitudes} mensajes={mensajes} />
 
       <Bloque
         titulo="Comunidad"
         tono={TONOS.comunidad}
         secciones={[
           { a: '/admin/miembros', titulo: 'Miembros', descripcion: 'Aprueba solicitudes y administra cuentas.', Icono: Users, insignia: solicitudes },
-          { a: '/admin/preguntas', titulo: 'Preguntas', descripcion: 'Responde lo que te preguntan en privado.', Icono: CircleHelp, insignia: preguntas },
+          { a: '/mensajes', titulo: 'Mensajes', descripcion: 'Conversaciones privadas con cada persona.', Icono: MessageCircle, insignia: mensajes },
           { a: '/admin/grupos', titulo: 'Grupos', descripcion: 'Crea grupos y asígnales su santo.', Icono: Church },
           { a: '/admin/santos', titulo: 'Santos', descripcion: 'La lista de santos para los grupos.', Icono: Crown },
         ]}
@@ -127,6 +129,18 @@ export function Panel() {
           { a: '/admin/libros', titulo: 'Biblioteca', descripcion: 'Sube libros y compártelos con los grupos.', Icono: BookOpen },
           { a: '/admin/encuestas', titulo: 'Encuestas de temas', descripcion: 'Propuestas, votación y resultados.', Icono: Vote },
           { a: '/admin/temario', titulo: 'Temario de charlas', descripcion: 'El plan de charlas de cada grupo.', Icono: ClipboardList },
+        ]}
+      />
+      <Bloque
+        titulo="Por si acaso"
+        tono={TONOS.historial}
+        secciones={[
+          {
+            a: '/admin/historial',
+            titulo: 'Deshacer cambios',
+            descripcion: 'Recupera lo que se borró o deshaz un cambio de los últimos 30 días.',
+            Icono: History,
+          },
         ]}
       />
     </div>

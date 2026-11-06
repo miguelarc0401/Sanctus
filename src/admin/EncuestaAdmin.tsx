@@ -47,7 +47,7 @@ function FormTema({ encuestaId, tema, onListo }: { encuestaId: number; tema: Tem
             ? () => {
                 if (!confirm(`¿Quitar el tema «${tema.titulo}»? También se borran sus votos.`)) return
                 void enviar(async () => {
-                  await borrarFila('temas', tema.id)
+                  await borrarFila('temas', tema.id, tema.titulo)
                   onListo()
                 })
               }
@@ -80,7 +80,7 @@ function FormEncuesta({ encuesta, onListo, onBorrada }: { encuesta: Encuesta; on
         onEliminar={() => {
           if (!confirm('¿Eliminar esta encuesta con todos sus temas y votos?')) return
           void enviar(async () => {
-            await borrarFila('encuestas', encuesta.id)
+            await borrarFila('encuestas', encuesta.id, encuesta.titulo)
             onBorrada()
           })
         }}

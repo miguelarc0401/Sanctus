@@ -78,7 +78,7 @@ function FormVirtud({ virtud, onListo }: { virtud: Virtud | null; onListo: () =>
             ? () => {
                 if (!confirm('¿Eliminar esta virtud?')) return
                 void enviar(async () => {
-                  await borrarFila('virtudes', virtud.id)
+                  await borrarFila('virtudes', virtud.id, virtud.virtud)
                   onListo()
                 })
               }

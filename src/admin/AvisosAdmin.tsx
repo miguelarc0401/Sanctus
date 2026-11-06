@@ -68,7 +68,7 @@ function FormAviso({ aviso, onListo }: { aviso: Aviso | null; onListo: () => voi
             ? () => {
                 if (!confirm('¿Eliminar este aviso?')) return
                 void enviar(async () => {
-                  await borrarFila('avisos', aviso.id)
+                  await borrarFila('avisos', aviso.id, aviso.titulo)
                   onListo()
                 })
               }

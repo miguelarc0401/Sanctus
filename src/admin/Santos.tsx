@@ -54,7 +54,7 @@ function FormSanto({ santo, onListo }: { santo: Santo | null; onListo: () => voi
             ? () => {
                 if (!confirm(`¿Eliminar a ${santo.nombre} de la lista?`)) return
                 void enviar(async () => {
-                  await borrarFila('santos', santo.id)
+                  await borrarFila('santos', santo.id, santo.nombre)
                   onListo()
                 })
               }

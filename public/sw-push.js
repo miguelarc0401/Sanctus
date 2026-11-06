@@ -7,6 +7,8 @@ self.addEventListener('push', (evento) => {
       icon: '/pwa-192x192.png',
       badge: '/pwa-64x64.png',
       tag: datos.etiqueta,
+      // Los mensajes del chat se juntan en una notificación por persona, pero cada uno vuelve a sonar.
+      renotify: Boolean(datos.etiqueta && datos.renotificar),
       lang: 'es',
       data: { url: datos.url || '/' },
     }),

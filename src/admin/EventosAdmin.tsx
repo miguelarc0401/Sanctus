@@ -119,7 +119,7 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
             ? () => {
                 if (!confirm('¿Eliminar este evento?')) return
                 void enviar(async () => {
-                  await borrarFila('eventos', evento.id)
+                  await borrarFila('eventos', evento.id, evento.titulo)
                   onListo()
                 })
               }

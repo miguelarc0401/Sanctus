@@ -64,17 +64,6 @@ export type Miembro = {
   miembros: { grupo_id: number }[]
 }
 
-export type Pregunta = {
-  id: number
-  autor_id: string
-  grupo_id: number | null
-  texto: string
-  creada_en: string
-  respuesta: string | null
-  respondida_en: string | null
-  respuesta_vista: boolean
-}
-
 export type FaseEncuesta = 'propuestas' | 'votacion' | 'cerrada'
 
 export type Encuesta = {

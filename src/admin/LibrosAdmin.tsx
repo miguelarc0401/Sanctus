@@ -5,7 +5,7 @@ import { Cargando, EncabezadoAdmin, Vacio } from '../components/Bloques'
 import { AreaTexto, Campo, Casilla, MensajeError, PieFormulario } from '../components/Formulario'
 import { Hoja } from '../components/Hoja'
 import { nombreDeGrupo, useGrupos } from '../grupos/contexto'
-import { datos, guardarFila } from '../lib/consultas'
+import { borrarFila, datos, guardarFila } from '../lib/consultas'
 import { unirImagenes } from '../lib/imagenesPdf'
 import { LIMITE_MB, urlPortada, type Libro } from '../lib/libros'
 import { abrirPdf, portadaDe } from '../lib/pdf'
@@ -219,11 +219,9 @@ function FormEditarLibro({ libro, onListo }: { libro: LibroConGrupos; onListo: (
     onListo()
   }
 
+  // El archivo y la portada se quedan 30 días por si se deshace; luego «Deshacer cambios» los quita.
   async function eliminar() {
-    const { error } = await supabase.from('libros').delete().eq('id', libro.id)
-    if (error) throw error
-    await supabase.storage.from('libros').remove([libro.archivo])
-    if (libro.portada) await supabase.storage.from('portadas').remove([libro.portada])
+    await borrarFila('libros', libro.id, libro.titulo)
     onListo()
   }
 
@@ -252,7 +250,7 @@ function FormEditarLibro({ libro, onListo }: { libro: LibroConGrupos; onListo: (
       <PieFormulario
         guardando={guardando}
         onEliminar={() => {
-          if (!confirm(`¿Eliminar «${libro.titulo}»? También se borran las notas y subrayados que cada quien hizo en él.`)) return
+          if (!confirm(`¿Eliminar «${libro.titulo}»? También se borran las notas y subrayados que cada quien hizo en él (se pueden recuperar durante 30 días).`)) return
           void enviar(eliminar)
         }}
       />

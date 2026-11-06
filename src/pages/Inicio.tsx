@@ -1,10 +1,8 @@
 import {
   CalendarDays,
   ChevronRight,
-  CircleHelp,
   Megaphone,
-  MessageCircleReply,
-  Shield,
+  MessageCircle,
   UserPlus,
   Vote,
   type LucideIcon,
@@ -20,10 +18,10 @@ import { useGrupos } from '../grupos/contexto'
 import { useAvisos, useProximosEventos, useVirtudDeLaSemana } from '../lib/contenido'
 import { hoyLargo, saludo } from '../lib/fechas'
 import { useEncuestas } from '../lib/participacion'
-import { usePreguntasSinResponder, useRespuestasNuevas, useSolicitudesPendientes } from '../lib/pendientes'
+import { useMensajesSinLeer, useSolicitudesPendientes } from '../lib/pendientes'
 import { useTituloDocumento } from '../lib/useTituloDocumento'
 
-// Algo que requiere atención: una respuesta nueva, una votación abierta, solicitudes por revisar…
+// Algo que requiere atención: un mensaje nuevo, una votación abierta, solicitudes por revisar…
 function Recordatorio({ a, Icono, children }: { a: string; Icono: LucideIcon; children: ReactNode }) {
   return (
     <li>
@@ -43,35 +41,24 @@ function Recordatorio({ a, Icono, children }: { a: string; Icono: LucideIcon; ch
 
 function Recordatorios({ grupoId }: { grupoId: number | null }) {
   const { perfil } = useAuth()
-  const { data: respuestas = 0 } = useRespuestasNuevas()
+  const { data: sinLeer = 0 } = useMensajesSinLeer()
   const { data: encuestas = [] } = useEncuestas(grupoId)
   const { data: solicitudes = 0 } = useSolicitudesPendientes()
-  const { data: preguntas = 0 } = usePreguntasSinResponder()
   const abierta = encuestas.find((e) => e.fase !== 'cerrada')
   const plural = (n: number, una: string, varias: string) => (n === 1 ? una : `${n} ${varias}`)
-  const hayAlgo = (perfil?.es_admin && (solicitudes > 0 || preguntas > 0)) || respuestas > 0 || !!abierta
+  const hayAlgo = (perfil?.es_admin && solicitudes > 0) || sinLeer > 0 || !!abierta
   if (!hayAlgo) return null
 
   return (
     <ul aria-label="Pendientes" className="space-y-2">
-      {/* Para quien coordina: si hay solicitudes y preguntas a la vez, van juntas en un solo renglón al panel. */}
-      {perfil?.es_admin && solicitudes > 0 && preguntas > 0 ? (
-        <Recordatorio a="/admin" Icono={Shield}>
-          Por atender: {plural(solicitudes, 'una solicitud de cuenta', 'solicitudes de cuenta')} y{' '}
-          {plural(preguntas, 'una pregunta', 'preguntas')}
-        </Recordatorio>
-      ) : perfil?.es_admin && solicitudes > 0 ? (
+      {perfil?.es_admin && solicitudes > 0 && (
         <Recordatorio a="/admin/miembros" Icono={UserPlus}>
           {plural(solicitudes, 'Una solicitud de cuenta', 'solicitudes de cuenta')} por revisar
         </Recordatorio>
-      ) : perfil?.es_admin && preguntas > 0 ? (
-        <Recordatorio a="/admin/preguntas" Icono={CircleHelp}>
-          {plural(preguntas, 'Una pregunta', 'preguntas')} por responder
-        </Recordatorio>
-      ) : null}
-      {respuestas > 0 && (
-        <Recordatorio a="/preguntas" Icono={MessageCircleReply}>
-          {plural(respuestas, 'El coordinador respondió tu pregunta', 'respuestas nuevas del coordinador')}
+      )}
+      {sinLeer > 0 && (
+        <Recordatorio a="/mensajes" Icono={MessageCircle}>
+          {plural(sinLeer, 'Tienes un mensaje nuevo', 'mensajes nuevos')}
         </Recordatorio>
       )}
       {abierta && (

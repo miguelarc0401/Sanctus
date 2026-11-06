@@ -1,26 +1,28 @@
-import { BookOpen, CalendarDays, Ellipsis, House, Shield, Vote, type LucideIcon } from 'lucide-react'
+import { BookOpen, CalendarDays, Ellipsis, House, MessageCircle, Shield, Vote, type LucideIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useAuth } from '../auth/contexto'
 import { useGrupos } from '../grupos/contexto'
 import { useEncuestas } from '../lib/participacion'
-import { usePreguntasSinResponder, useRespuestasNuevas, useSolicitudesPendientes } from '../lib/pendientes'
+import { useMensajesEnVivo } from '../lib/mensajes'
+import { useMensajesSinLeer, useSolicitudesPendientes } from '../lib/pendientes'
+import { AvisoDeshacer } from './AvisoDeshacer'
 import { Insignia, SinConexion } from './Bloques'
 import { BotonGrupo } from './ElegirGrupo'
 
-type Seccion = { a: string; texto: string; Icono: LucideIcon; aviso?: string }
+// soloComputadora: en el teléfono no cabe en el menú de abajo (está dentro de «Más»).
+type Seccion = { a: string; texto: string; Icono: LucideIcon; aviso?: string; insignia?: number; soloComputadora?: boolean }
 
 // Puntito en el menú cuando hay algo por hacer: una votación abierta o algo pendiente en «Más».
 function useSecciones(): { secciones: Seccion[]; pendientesAdmin: number } {
   const { perfil } = useAuth()
   const { grupo } = useGrupos()
   const { data: encuestas = [] } = useEncuestas(grupo?.id ?? null)
-  const { data: respuestas = 0 } = useRespuestasNuevas()
+  const { data: sinLeer = 0 } = useMensajesSinLeer()
   const { data: solicitudes = 0 } = useSolicitudesPendientes()
-  const { data: preguntas = 0 } = usePreguntasSinResponder()
   const abierta = encuestas.find((e) => e.fase !== 'cerrada')
-  const pendientesAdmin = perfil?.es_admin ? solicitudes + preguntas : 0
-  const enMas = respuestas + pendientesAdmin
+  const pendientesAdmin = perfil?.es_admin ? solicitudes : 0
+  const enMas = sinLeer + pendientesAdmin
 
   return {
     pendientesAdmin,
@@ -34,6 +36,7 @@ function useSecciones(): { secciones: Seccion[]; pendientesAdmin: number } {
         Icono: Vote,
         aviso: abierta ? (abierta.fase === 'votacion' ? 'hay una votación abierta' : 'puedes proponer temas') : undefined,
       },
+      { a: '/mensajes', texto: 'Mensajes', Icono: MessageCircle, insignia: sinLeer, soloComputadora: true },
       { a: '/mas', texto: 'Más', Icono: Ellipsis, aviso: enMas ? `${enMas} ${enMas === 1 ? 'pendiente' : 'pendientes'}` : undefined },
     ],
   }
@@ -76,11 +79,14 @@ export function Layout() {
   const { perfil } = useAuth()
   const { pathname } = useLocation()
   const { secciones, pendientesAdmin } = useSecciones()
+  useMensajesEnVivo()
+  // Dentro de una conversación, el campo para escribir va abajo en lugar del menú (como en WhatsApp).
+  const enConversacion = /^\/mensajes\/[^/]+$/.test(pathname)
 
-  // Al cambiar de sección se empieza desde arriba, como en una app.
+  // Al cambiar de sección se empieza desde arriba, como en una app (una conversación empieza abajo).
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [pathname])
+    if (!enConversacion) window.scrollTo(0, 0)
+  }, [pathname, enConversacion])
 
   return (
     <div className="min-h-dvh lg:pl-72">
@@ -98,7 +104,7 @@ export function Layout() {
         <Marca grande />
         <nav aria-label="Secciones" className="mt-10 flex-1">
           <ul className="space-y-1">
-            {secciones.map(({ a, texto, Icono, aviso }) => (
+            {secciones.map(({ a, texto, Icono, aviso, insignia }) => (
               <li key={a}>
                 <NavLink
                   to={a}
@@ -111,7 +117,8 @@ export function Layout() {
                 >
                   <Icono className="size-5" aria-hidden />
                   <span className="flex-1">{texto}</span>
-                  {aviso && (
+                  <Insignia cuenta={insignia} />
+                  {aviso && !insignia && (
                     <>
                       <span aria-hidden className="size-2.5 rounded-full bg-oro-400 ring-2 ring-cielo-800" />
                       <span className="sr-only">, {aviso}</span>
@@ -145,18 +152,24 @@ export function Layout() {
       <main
         id="contenido"
         tabIndex={-1}
-        className="mx-auto max-w-2xl px-4 pt-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] outline-none lg:max-w-3xl lg:px-10 lg:pt-12 lg:pb-16"
+        className={`mx-auto max-w-2xl px-4 pt-6 outline-none lg:max-w-3xl lg:px-10 lg:pt-12 ${
+          enConversacion ? 'pb-0' : 'pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-16'
+        }`}
       >
         <SinConexion />
         <Outlet />
       </main>
 
+      <AvisoDeshacer />
+
       <nav
         aria-label="Secciones"
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200/80 bg-white/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_-12px_rgb(23_42_82/0.25)] backdrop-blur-md lg:hidden"
+        className={`fixed inset-x-0 bottom-0 z-20 border-t border-stone-200/80 bg-white/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_-12px_rgb(23_42_82/0.25)] backdrop-blur-md lg:hidden ${
+          enConversacion ? 'hidden' : ''
+        }`}
       >
         <ul className="mx-auto grid max-w-2xl grid-cols-5 px-1">
-          {secciones.map(({ a, texto, Icono, aviso }) => (
+          {secciones.filter((s) => !s.soloComputadora).map(({ a, texto, Icono, aviso }) => (
             <li key={a}>
               <NavLink
                 to={a}
