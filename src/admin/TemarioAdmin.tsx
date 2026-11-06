@@ -6,12 +6,13 @@ import { AreaTexto, Campo, MensajeError, PieFormulario, Selector } from '../comp
 import { Hoja } from '../components/Hoja'
 import { useGrupos } from '../grupos/contexto'
 import { borrarFila, datos, guardarFila } from '../lib/consultas'
-import { fechaLarga } from '../lib/fechas'
+import { normalizarEnlace } from '../lib/enlaces'
+import { fechaLarga, horaDelDia } from '../lib/fechas'
 import { useCharlas, useEncuestas } from '../lib/participacion'
 import { supabase } from '../lib/supabase'
 import { COLUMNAS_TEMA, type Charla, type Tema } from '../lib/tipos'
 import { useEnvio } from '../lib/useEnvio'
-import { GrupoDeTrabajo } from './comunes'
+import { CampoMapa, GrupoDeTrabajo } from './comunes'
 
 // Temas de las encuestas cerradas del grupo: primero los ganadores.
 function useTemasVotados(grupoId: number | null) {
@@ -47,6 +48,9 @@ function FormCharla({
   const [titulo, setTitulo] = useState(charla?.titulo ?? '')
   const [objetivo, setObjetivo] = useState(charla?.objetivo ?? '')
   const [fecha, setFecha] = useState(charla?.fecha ?? '')
+  const [hora, setHora] = useState(charla?.hora?.slice(0, 5) ?? '')
+  const [lugar, setLugar] = useState(charla?.lugar ?? '')
+  const [mapa, setMapa] = useState(charla?.mapa ?? '')
   const [temaVotado, setTemaVotado] = useState(charla?.tema_votado_id ? String(charla.tema_votado_id) : '')
   const { ganadores, otros, titulo: tituloEncuesta } = useTemasVotados(grupoId)
   const { guardando, error, enviar } = useEnvio()
@@ -61,6 +65,9 @@ function FormCharla({
             titulo: titulo.trim(),
             objetivo: objetivo.trim() || null,
             fecha: fecha || null,
+            hora: hora || null,
+            lugar: lugar.trim() || null,
+            mapa: normalizarEnlace(mapa),
             tema_votado_id: temaVotado ? Number(temaVotado) : null,
           }
           await guardarFila(
@@ -88,7 +95,19 @@ function FormCharla({
         value={objetivo}
         onChange={(e) => setObjetivo(e.target.value)}
       />
-      <Campo id="fecha" etiqueta="Fecha" ayuda="(opcional)" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Campo id="fecha" etiqueta="Fecha" ayuda="(opcional)" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        <Campo id="hora" etiqueta="Hora" ayuda="(opcional)" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
+      </div>
+      <Campo
+        id="lugar"
+        etiqueta="Lugar"
+        ayuda="(opcional)"
+        placeholder="Por ejemplo: Salón parroquial"
+        value={lugar}
+        onChange={(e) => setLugar(e.target.value)}
+      />
+      <CampoMapa valor={mapa} onCambiar={setMapa} lugar={lugar} />
       <Selector id="tema-votado" etiqueta="Tema votado para esta charla" value={temaVotado} onChange={(e) => setTemaVotado(e.target.value)}>
         <option value="">Por definir</option>
         {ganadores.length > 0 && (
@@ -170,6 +189,8 @@ export function TemarioAdmin() {
                 <span className="block truncate text-stone-900">{charla.titulo}</span>
                 <span className="block truncate text-sm text-stone-500">
                   {charla.fecha ? fechaLarga(charla.fecha) : 'Sin fecha'}
+                  {charla.hora && `, ${horaDelDia(charla.hora)}`}
+                  {charla.lugar && ` · ${charla.lugar}`}
                   {charla.tema && ` · Votado: ${charla.tema.titulo}`}
                 </span>
               </button>

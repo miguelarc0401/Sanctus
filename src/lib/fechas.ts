@@ -50,6 +50,8 @@ export const mes = (iso: string) => formatoMes.format(new Date(iso))
 export const diaSemana = (iso: string) => formatoDiaSemana.format(new Date(iso))
 // Para columnas de tipo fecha («2026-10-19»), sin hora.
 export const fechaLarga = (fecha: string) => formatoDiaLargo.format(deFechaISO(fecha))
+// Para columnas de tipo hora («19:00:00»): «7:00 p.m.».
+export const horaDelDia = (valor: string) => formatoHora.format(new Date(`1970-01-01T${valor.slice(0, 5)}`))
 export const semanaDel =(semana: string) => `Semana del ${formatoDiaLargo.format(deFechaISO(semana))}`
 
 const formatoMesCorto = new Intl.DateTimeFormat(IDIOMA, { month: 'short' })

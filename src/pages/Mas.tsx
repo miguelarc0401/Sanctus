@@ -5,6 +5,7 @@ import {
   LogOut,
   Megaphone,
   MessageCircle,
+  Pencil,
   Share,
   Shield,
   Type,
@@ -18,6 +19,7 @@ import { AjusteNotificaciones } from '../components/Notificaciones'
 import { guardarTamanoLetra, leerTamanoLetra, type TamanoLetra } from '../lib/apariencia'
 import { hayCambiosPendientes } from '../lib/cambiosPendientes'
 import { esAppInstalada, esIOS, instalar, usePuedeInstalar } from '../lib/instalar'
+import { perfilVacio, useMiPerfil } from '../lib/perfil'
 import { useMensajesSinLeer, useSolicitudesPendientes } from '../lib/pendientes'
 import { useTituloDocumento } from '../lib/useTituloDocumento'
 
@@ -134,6 +136,7 @@ export function Mas() {
   const { sesion, perfil, cerrarSesion } = useAuth()
   const { data: sinLeer } = useMensajesSinLeer()
   const { data: solicitudes = 0 } = useSolicitudesPendientes()
+  const { data: datosPerfil } = useMiPerfil()
   const iniciales = (perfil?.nombre ?? '')
     .split(' ')
     .filter(Boolean)
@@ -147,7 +150,11 @@ export function Mas() {
     <div className="space-y-7">
       <h1 className="sr-only">Más</h1>
 
-      <section aria-label="Tu perfil" className="manto relative overflow-hidden rounded-3xl p-5 text-white shadow-lg shadow-cielo-900/20">
+      <Link
+        to="/perfil"
+        aria-label={`Tu perfil: ${perfil?.nombre ?? ''}. Editar mi perfil`}
+        className="manto relative block overflow-hidden rounded-3xl p-5 text-white shadow-lg shadow-cielo-900/20 transition hover:shadow-xl"
+      >
         <span aria-hidden className="pointer-events-none absolute -top-14 -right-10 size-40 rounded-full bg-oro-400/20 blur-3xl" />
         <div className="relative flex items-center gap-4">
           <span
@@ -161,7 +168,12 @@ export function Mas() {
             <p className="truncate text-sm text-cielo-100">{perfil?.acceso ?? sesion?.user.email}</p>
           </div>
         </div>
-      </section>
+        <p className="relative mt-4 flex items-center gap-2 border-t border-white/15 pt-3 text-sm font-medium text-oro-400">
+          <Pencil className="size-4" aria-hidden />
+          <span className="flex-1">{datosPerfil && perfilVacio(datosPerfil) ? 'Completa tu perfil: teléfono y gustos' : 'Editar mi perfil'}</span>
+          <ChevronRight className="size-5" aria-hidden />
+        </p>
+      </Link>
 
       {perfil?.es_admin && (
         <Seccion titulo="Coordinación">

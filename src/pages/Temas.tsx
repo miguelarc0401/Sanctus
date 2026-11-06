@@ -1,13 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, CheckCircle2, ClipboardList, MessagesSquare, Vote } from 'lucide-react'
+import { Check, CheckCircle2, ClipboardList, Clock, MessagesSquare, Vote } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Cargando, Encabezado, EtiquetaFase, Segmentos, Tarjeta, Vacio } from '../components/Bloques'
 import { BarrasDeResultados } from '../components/Encuestas'
 import { AreaTexto, Boton, Campo, MensajeError, MensajeExito } from '../components/Formulario'
+import { Lugar } from '../components/Lugar'
 import { TextoConEnlaces } from '../components/TextoConEnlaces'
 import { useGrupos } from '../grupos/contexto'
-import { fechaLarga, hoyISO } from '../lib/fechas'
+import { fechaLarga, horaDelDia, hoyISO } from '../lib/fechas'
 import { useCharlas, useEncuestas, useMiVoto, useResultados, useTemas } from '../lib/participacion'
 import { supabase } from '../lib/supabase'
 import type { Encuesta, Tema } from '../lib/tipos'
@@ -238,7 +239,6 @@ function Temario({ grupoId }: { grupoId: number }) {
             <Tarjeta destacada={esProxima}>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-semibold text-cielo-700">Charla {i + 1}</span>
-                {charla.fecha && <span className="text-stone-600">· {fechaLarga(charla.fecha)}</span>}
                 {esProxima && (
                   <span className="rounded-full bg-oro-400/25 px-2 py-0.5 text-xs font-semibold text-oro-700">Próxima</span>
                 )}
@@ -246,6 +246,20 @@ function Temario({ grupoId }: { grupoId: number }) {
               </div>
               <h2 className="mt-1 font-serif text-2xl leading-tight font-semibold text-cielo-800">{charla.titulo}</h2>
               {charla.objetivo && <TextoConEnlaces className="mt-1 text-stone-700">{charla.objetivo}</TextoConEnlaces>}
+              {/* Cuándo y dónde, como en el calendario. */}
+              {(charla.fecha || charla.hora || charla.lugar || charla.mapa) && (
+                <div className="mt-3 space-y-1.5">
+                  {(charla.fecha || charla.hora) && (
+                    <p className="flex items-start gap-1.5 text-sm text-stone-600">
+                      <Clock className="mt-0.5 size-4 shrink-0" aria-hidden />
+                      <span className="block first-letter:uppercase">
+                        {[charla.fecha && fechaLarga(charla.fecha), charla.hora && horaDelDia(charla.hora)].filter(Boolean).join(', ')}
+                      </span>
+                    </p>
+                  )}
+                  <Lugar lugar={charla.lugar} mapa={charla.mapa} />
+                </div>
+              )}
               <ul className="mt-4 space-y-2 rounded-xl bg-crema p-3 text-sm ring-1 ring-stone-200/80">
                 <li className="flex items-start gap-2">
                   <ClipboardList className="mt-0.5 size-4 shrink-0 text-cielo-600" aria-hidden />

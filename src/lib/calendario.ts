@@ -25,7 +25,7 @@ export function enlaceGoogle(evento: Evento) {
     action: 'TEMPLATE',
     text: evento.titulo,
     dates: `${inicio}/${fin}`,
-    details: evento.descripcion ?? '',
+    details: [evento.descripcion, evento.mapa].filter(Boolean).join('\n\n'),
     location: evento.lugar ?? '',
   })
   return `https://calendar.google.com/calendar/render?${parametros}`
@@ -49,7 +49,10 @@ export function descargarIcs(evento: Evento) {
     todoElDia ? `DTEND;VALUE=DATE:${fin}` : `DTEND:${fin}`,
     `SUMMARY:${escapar(evento.titulo)}`,
     evento.lugar ? `LOCATION:${escapar(evento.lugar)}` : null,
-    evento.descripcion ? `DESCRIPTION:${escapar(evento.descripcion)}` : null,
+    evento.descripcion || evento.mapa
+      ? `DESCRIPTION:${escapar([evento.descripcion, evento.mapa].filter(Boolean).join('\n\n'))}`
+      : null,
+    evento.mapa ? `URL:${evento.mapa}` : null,
     'END:VEVENT',
     'END:VCALENDAR',
   ].filter(Boolean)

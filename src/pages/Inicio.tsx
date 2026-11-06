@@ -4,6 +4,7 @@ import {
   Megaphone,
   MessageCircle,
   UserPlus,
+  UserRound,
   Vote,
   type LucideIcon,
 } from 'lucide-react'
@@ -19,6 +20,7 @@ import { useAvisos, useProximosEventos, useVirtudDeLaSemana } from '../lib/conte
 import { hoyLargo, saludo } from '../lib/fechas'
 import { useEncuestas } from '../lib/participacion'
 import { useMensajesSinLeer, useSolicitudesPendientes } from '../lib/pendientes'
+import { perfilVacio, useMiPerfil } from '../lib/perfil'
 import { useTituloDocumento } from '../lib/useTituloDocumento'
 
 // Algo que requiere atención: un mensaje nuevo, una votación abierta, solicitudes por revisar…
@@ -44,9 +46,12 @@ function Recordatorios({ grupoId }: { grupoId: number | null }) {
   const { data: sinLeer = 0 } = useMensajesSinLeer()
   const { data: encuestas = [] } = useEncuestas(grupoId)
   const { data: solicitudes = 0 } = useSolicitudesPendientes()
+  const { data: datosPerfil } = useMiPerfil()
   const abierta = encuestas.find((e) => e.fase !== 'cerrada')
   const plural = (n: number, una: string, varias: string) => (n === 1 ? una : `${n} ${varias}`)
-  const hayAlgo = (perfil?.es_admin && solicitudes > 0) || sinLeer > 0 || !!abierta
+  // Los miembros que todavía no cuentan nada de sí (a los coordinadores no se les insiste).
+  const faltaPerfil = !perfil?.es_admin && !!datosPerfil && perfilVacio(datosPerfil)
+  const hayAlgo = (perfil?.es_admin && solicitudes > 0) || sinLeer > 0 || !!abierta || faltaPerfil
   if (!hayAlgo) return null
 
   return (
@@ -72,6 +77,11 @@ function Recordatorios({ grupoId }: { grupoId: number | null }) {
               ¡Vota por el tema de la próxima charla! <strong className="font-semibold">«{abierta.titulo}»</strong>
             </>
           )}
+        </Recordatorio>
+      )}
+      {faltaPerfil && (
+        <Recordatorio a="/perfil" Icono={UserRound}>
+          Cuéntale a tu coordinador de ti: <strong className="font-semibold">completa tu perfil</strong>
         </Recordatorio>
       )}
     </ul>

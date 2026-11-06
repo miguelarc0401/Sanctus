@@ -25,6 +25,7 @@ import { Entrar } from './pages/Entrar'
 import { Inicio } from './pages/Inicio'
 import { Mas } from './pages/Mas'
 import { Mensajes } from './pages/Mensajes'
+import { Perfil } from './pages/Perfil'
 import { Registro } from './pages/Registro'
 import { Temas } from './pages/Temas'
 
@@ -64,6 +65,7 @@ export function App() {
           {/* «Pregúntale al coordinador» ahora es el chat. */}
           <Route path="/preguntas" element={<Navigate to="/mensajes" replace />} />
           <Route path="/mas" element={<Mas />} />
+          <Route path="/perfil" element={<Perfil />} />
           <Route path="/admin" element={<RutaAdmin />}>
             <Route index element={<Panel />} />
             <Route path="grupos" element={<Grupos />} />

@@ -33,6 +33,8 @@ export type Evento = {
   titulo: string
   descripcion: string | null
   lugar: string | null
+  // Enlace de Google Maps (o de otra app de mapas) para abrir el lugar con un toque.
+  mapa: string | null
   inicio: string
   fin: string | null
   todo_el_dia: boolean
@@ -62,6 +64,11 @@ export type Miembro = {
   nota_registro: string | null
   creado_en: string
   miembros: { grupo_id: number }[]
+  // Lo que cada quien cuenta de sí en «Mi perfil» (sólo lo ven la persona y los coordinadores).
+  telefono: string | null
+  deportes: string[]
+  musica: string[]
+  actividades: string[]
 }
 
 export type FaseEncuesta = 'propuestas' | 'votacion' | 'cerrada'
@@ -91,6 +98,10 @@ export type Charla = {
   grupo_id: number
   orden: number
   fecha: string | null
+  // «19:00:00»: la hora del día, sin fecha.
+  hora: string | null
+  lugar: string | null
+  mapa: string | null
   titulo: string
   objetivo: string | null
   tema_votado_id: number | null

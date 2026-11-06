@@ -52,6 +52,8 @@ const CAMPOS: Record<string, string> = {
   tipo: 'tipo',
   descripcion: 'descripción',
   lugar: 'lugar',
+  mapa: 'enlace del mapa',
+  hora: 'hora',
   inicio: 'fecha',
   fin: 'fin',
   todo_el_dia: 'todo el día',

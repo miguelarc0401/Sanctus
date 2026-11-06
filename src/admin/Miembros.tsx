@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, KeyRound, MessageCircle, Pencil, RefreshCw, UserCheck, UserX } from 'lucide-react'
+import { Check, Copy, KeyRound, MessageCircle, Pencil, Phone, RefreshCw, Search, UserCheck, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/contexto'
@@ -9,12 +9,67 @@ import { Hoja } from '../components/Hoja'
 import { nombreDeGrupo, useGrupos } from '../grupos/contexto'
 import { datos, guardarFila, llamarMiembros } from '../lib/consultas'
 import { diaCorto } from '../lib/fechas'
+import { enlaceLlamar, enlaceWhatsApp, GUSTOS, TIPOS_GUSTO } from '../lib/perfil'
 import { supabase } from '../lib/supabase'
 import type { Grupo, Miembro } from '../lib/tipos'
 import { useEnvio } from '../lib/useEnvio'
 import { generarContrasena, sugerirUsuario } from '../lib/usuarios'
 
 type Entrega = { nombre: string; acceso: string; contrasena: string }
+
+// Lo que la persona contó de sí en «Mi perfil»: teléfono (para llamar o escribirle) y gustos.
+function SobreLaPersona({ miembro }: { miembro: Miembro }) {
+  const whatsapp = miembro.telefono ? enlaceWhatsApp(miembro.telefono) : null
+  const gustos = TIPOS_GUSTO.filter((t) => (miembro[t] ?? []).length > 0)
+  const boton =
+    'inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-medium text-cielo-800 ring-1 ring-stone-300 transition hover:bg-cielo-50'
+
+  return (
+    <section aria-label="Lo que contó de sí" className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-stone-200">
+      {!miembro.telefono && gustos.length === 0 ? (
+        <p className="text-sm text-stone-600">Todavía no llena su perfil (teléfono y gustos).</p>
+      ) : (
+        <>
+          {miembro.telefono && (
+            <div className="space-y-2">
+              <p className="flex items-center gap-2 text-stone-900">
+                <Phone className="size-4 text-stone-500" aria-hidden />
+                <span className="font-medium tabular-nums">{miembro.telefono}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a href={enlaceLlamar(miembro.telefono)} className={boton}>
+                  Llamar
+                </a>
+                {whatsapp && (
+                  <a href={whatsapp} target="_blank" rel="noreferrer" className={boton}>
+                    WhatsApp
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+          {gustos.map((tipo) => {
+            const { titulo, Icono } = GUSTOS[tipo]
+            return (
+              <div key={tipo}>
+                <p className="flex items-center gap-1.5 text-sm font-medium text-stone-600">
+                  <Icono className="size-4 text-oro-600" aria-hidden /> {titulo}
+                </p>
+                <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                  {miembro[tipo].map((gusto) => (
+                    <li key={gusto} className="rounded-full bg-cielo-50 px-2.5 py-1 text-sm text-cielo-800 ring-1 ring-cielo-100">
+                      {gusto}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
+        </>
+      )}
+    </section>
+  )
+}
 
 // Datos que el coordinador le pasa a la persona (en papel o por WhatsApp).
 function DatosDeEntrega({ entrega, onListo }: { entrega: Entrega; onListo: () => void }) {
@@ -274,6 +329,7 @@ function FormMiembro({
         void enviar(guardar)
       }}
     >
+      <SobreLaPersona miembro={miembro} />
       {!esUnoMismo && miembro.estado === 'aprobado' && (
         <Link
           to={`/mensajes/${miembro.id}`}
@@ -422,6 +478,7 @@ export function Miembros() {
   const { perfil } = useAuth()
   const { grupos } = useGrupos()
   const [filtro, setFiltro] = useState('todos')
+  const [buscar, setBuscar] = useState('')
   const [ventana, setVentana] = useState<Ventana | null>(null)
 
   const { data: todos = [], isPending } = useQuery({
@@ -431,7 +488,7 @@ export function Miembros() {
         supabase
           .from('perfiles')
           .select(
-            'id, nombre, acceso, es_admin, es_principal, debe_cambiar_contrasena, estado, grupo_solicitado, nota_registro, creado_en, miembros(grupo_id)',
+            'id, nombre, acceso, es_admin, es_principal, debe_cambiar_contrasena, estado, grupo_solicitado, nota_registro, creado_en, miembros(grupo_id), telefono, deportes, musica, actividades',
           )
           .order('nombre'),
       ),
@@ -439,7 +496,14 @@ export function Miembros() {
 
   const solicitudes = todos.filter((m) => m.estado === 'pendiente')
   const miembros = todos.filter((m) => m.estado !== 'pendiente')
+  // Por nombre, usuario o gusto («fútbol» encuentra a quienes les gusta), sin importar acentos.
+  const sinAcentos = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  const busqueda = sinAcentos(buscar.trim())
+  const coincide = (m: Miembro) =>
+    !busqueda ||
+    [m.nombre, m.acceso ?? '', ...TIPOS_GUSTO.flatMap((t) => m[t] ?? [])].some((texto) => sinAcentos(texto).includes(busqueda))
   const visibles = miembros.filter((m) => {
+    if (!coincide(m)) return false
     if (filtro === 'todos') return true
     if (filtro === 'sin-grupo') return m.miembros.length === 0
     return m.miembros.some((g) => g.grupo_id === Number(filtro))
@@ -472,11 +536,22 @@ export function Miembros() {
         ))}
         <option value="sin-grupo">Sin grupo</option>
       </Selector>
+      <label className="relative block">
+        <span className="sr-only">Buscar por nombre o gusto</span>
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-stone-400" aria-hidden />
+        <input
+          type="search"
+          value={buscar}
+          onChange={(e) => setBuscar(e.target.value)}
+          placeholder="Buscar por nombre o gusto (por ejemplo, fútbol)"
+          className="block min-h-12 w-full rounded-xl border border-stone-300 bg-white py-3 pr-4 pl-12 text-base text-stone-900 shadow-sm outline-none placeholder:text-stone-400 focus:border-cielo-600 focus:ring-4 focus:ring-cielo-500/15"
+        />
+      </label>
 
       {isPending ? (
         <Cargando />
       ) : visibles.length === 0 ? (
-        <Vacio>No hay miembros aquí.</Vacio>
+        <Vacio>{busqueda ? 'Nadie coincide con esa búsqueda.' : 'No hay miembros aquí.'}</Vacio>
       ) : (
         <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-tarjeta ring-1 ring-stone-200/80">
           {visibles.map((miembro) => (

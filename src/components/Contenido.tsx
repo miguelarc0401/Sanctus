@@ -1,10 +1,11 @@
-import { CalendarPlus, Check, Clock, MapPin, Pin, Sparkles } from 'lucide-react'
+import { CalendarPlus, Check, Clock, Pin, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { descargarIcs, enlaceGoogle } from '../lib/calendario'
 import { aFechaISO, cuandoEs, diaLargo, diaSemana, haceCuanto, hora, mesCorto, semanaDel } from '../lib/fechas'
 import type { Aviso, Evento, Virtud } from '../lib/tipos'
 import { EtiquetaTipo } from './Bloques'
 import { Hoja } from './Hoja'
+import { Lugar } from './Lugar'
 import { TextoConEnlaces } from './TextoConEnlaces'
 
 const mismoDia = (a: string, b: string) => aFechaISO(new Date(a)) === aFechaISO(new Date(b))
@@ -91,12 +92,7 @@ export function FilaEvento({ evento }: { evento: Evento }) {
         <p className="flex items-center gap-1.5 text-sm text-stone-600">
           <Clock className="size-4 shrink-0" aria-hidden /> {horario(evento)}
         </p>
-        {evento.lugar && (
-          <div className="flex items-start gap-1.5 text-sm text-stone-600">
-            <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <TextoConEnlaces className="min-w-0">{evento.lugar}</TextoConEnlaces>
-          </div>
-        )}
+        <Lugar lugar={evento.lugar} mapa={evento.mapa} />
         {evento.descripcion && <TextoConEnlaces className="pt-1 text-sm text-stone-600">{evento.descripcion}</TextoConEnlaces>}
         <AgregarAlCalendario evento={evento} />
       </div>

@@ -6,12 +6,13 @@ import { AreaTexto, Campo, Casilla, MensajeError, PieFormulario, Selector } from
 import { Hoja } from '../components/Hoja'
 import { borrarFila, datos, guardarFila, insertarFila } from '../lib/consultas'
 import { terminoAntesDe } from '../lib/contenido'
+import { normalizarEnlace } from '../lib/enlaces'
 import { notificar } from '../lib/notificaciones'
 import { aValorDeCampo, deValorDeCampo, diaLargo, hora, inicioDeHoy } from '../lib/fechas'
 import { supabase } from '../lib/supabase'
 import { TIPOS_EVENTO, type Evento, type TipoEvento } from '../lib/tipos'
 import { useEnvio } from '../lib/useEnvio'
-import { Destino, SelectorDeDestino } from './comunes'
+import { CampoMapa, Destino, SelectorDeDestino } from './comunes'
 
 function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () => void }) {
   const [tipo, setTipo] = useState<TipoEvento>(evento?.tipo ?? 'actividad')
@@ -20,6 +21,7 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
   const [inicio, setInicio] = useState(evento ? aValorDeCampo(evento.inicio, !evento.todo_el_dia) : '')
   const [fin, setFin] = useState(evento?.fin ? aValorDeCampo(evento.fin, !evento.todo_el_dia) : '')
   const [lugar, setLugar] = useState(evento?.lugar ?? '')
+  const [mapa, setMapa] = useState(evento?.mapa ?? '')
   const [descripcion, setDescripcion] = useState(evento?.descripcion ?? '')
   const [destino, setDestino] = useState(evento?.grupo_id ? String(evento.grupo_id) : '')
   const [errorFechas, setErrorFechas] = useState<string | null>(null)
@@ -52,6 +54,7 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
             inicio: deValorDeCampo(inicio),
             fin: fin ? deValorDeCampo(fin) : null,
             lugar: lugar.trim() || null,
+            mapa: normalizarEnlace(mapa),
             descripcion: descripcion.trim() || null,
             grupo_id: destino ? Number(destino) : null,
           }
@@ -93,7 +96,15 @@ function FormEvento({ evento, onListo }: { evento: Evento | null; onListo: () =>
           onChange={(e) => setFin(e.target.value)}
         />
       </div>
-      <Campo id="lugar" etiqueta="Lugar" ayuda="(opcional)" value={lugar} onChange={(e) => setLugar(e.target.value)} />
+      <Campo
+        id="lugar"
+        etiqueta="Lugar"
+        ayuda="(opcional)"
+        placeholder="Por ejemplo: Capilla del Santísimo"
+        value={lugar}
+        onChange={(e) => setLugar(e.target.value)}
+      />
+      <CampoMapa valor={mapa} onCambiar={setMapa} lugar={lugar} />
       <AreaTexto
         id="descripcion"
         etiqueta="Detalles"

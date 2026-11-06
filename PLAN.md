@@ -10,6 +10,8 @@ Una app web instalable (PWA) para los grupos de la parroquia: jóvenes, adultos,
 |---|---|
 | Notas en los libros | Privadas: sólo las ve quien las escribe (ni siquiera el administrador). |
 | Votación de temas | Por encuesta. Cada encuesta nueva empieza de cero: un voto por persona en cada encuesta. |
+| Perfil | Cada quien llena en «Mi perfil» su teléfono y sus gustos (deportes, música, actividades), eligiendo ideas o agregando las suyas. Sólo lo ven la persona y los coordinadores; en la ficha del miembro aparecen con botones para llamar o escribir por WhatsApp, y en Miembros se puede buscar por gusto. |
+| Lugares | Los eventos y las charlas del temario tienen fecha, hora y lugar, con un enlace de Google Maps opcional que se abre con un toque («Ver en el mapa»). |
 | Mensajes | Chat privado entre cada persona y el coordinador que elija: sólo lo ven esas dos personas (ni los demás coordinadores). Un miembro sólo puede escribirle a un coordinador; un coordinador, a cualquier cuenta activa. Reemplazó a «Pregúntale al coordinador». |
 | Deshacer | Todo lo que un coordinador borra o cambia en el panel se guarda 30 días. Justo después de borrar aparece «Deshacer»; después, en el panel, «Deshacer cambios» lo recupera con todo lo que se fue con ello (los temas y votos de una encuesta, las notas de un libro…). Como Ctrl+Z: si algo se volvió a cambiar, primero se deshace lo más reciente. Las cuentas de los miembros no entran: para quitar el acceso sin perder nada, se desactiva la cuenta. |
 | Alta de miembros | Cada quien se registra desde la app y el administrador aprueba la solicitud (y asigna grupos). Mientras tanto, la cuenta no ve nada. El administrador también puede crear cuentas, cambiar usuario, desactivarlas o eliminarlas. |
@@ -56,11 +58,11 @@ El administrador crea la cuenta desde el panel con correo, nombre, grupos y una 
 ## 5. Modelo de datos
 
 ```
-perfiles        id, nombre, foto, es_admin, debe_cambiar_contrasena
+perfiles        id, nombre, foto, es_admin, debe_cambiar_contrasena, telefono, deportes[], musica[], actividades[]
 grupos          id, nombre, santo, descripcion, imagen
 miembros        grupo_id, usuario_id
 avisos          id, grupo_id (vacío = todos), titulo, texto, fijado, publicado_en
-eventos         id, grupo_id (vacío = todos), tipo, titulo, descripcion, lugar, inicio, fin
+eventos         id, grupo_id (vacío = todos), tipo, titulo, descripcion, lugar, mapa, inicio, fin
                   tipo: actividad | campamento | excursion | misa | hora_santa | charla
 virtudes        id, semana (lunes), grupo_id (vacío = todos), virtud, explicacion, ejemplos[]
 libros          id, titulo, autor, descripcion, portada, archivo, num_paginas
@@ -73,7 +75,7 @@ encuestas       id, grupo_id, titulo, fase, tema_ganador_id
                   fase: propuestas | votacion | cerrada
 temas           id, encuesta_id, autor_id, titulo, descripcion
 votos           encuesta_id, usuario_id, tema_id      ← único por (encuesta, usuario)
-charlas         id, grupo_id, orden, fecha, titulo, objetivo, tema_votado_id
+charlas         id, grupo_id, orden, fecha, hora, lugar, mapa, titulo, objetivo, tema_votado_id
 mensajes        id, de, para, texto, creado_en, leido_en      ← de y para: al menos uno es coordinador
 historial       id, lote, tabla, accion, directo, datos, cambios, nuevos, hecho_por, hecho_en, deshecho_por, deshecho_en
                   accion: borrado | edicion · lote: todo lo de una misma operación (se deshace junto)
@@ -126,7 +128,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 - **Calendario:** vista de mes y lista, con filtro por tipo de evento.
 - **Biblioteca:** libros del grupo, lector, «Mis notas» y «Mis frases».
 - **Temas:** encuesta actual (proponer o votar) y resultados anteriores.
-- **Más:** mensajes (chat con los coordinadores), avisos, temario de charlas, perfil. En la computadora, «Mensajes» también está en el menú lateral.
+- **Más:** mi perfil (teléfono y gustos), mensajes (chat con los coordinadores), avisos, temario de charlas. En la computadora, «Mensajes» también está en el menú lateral.
 - **Conversación:** burbujas por día, «visto» con doble palomita, enlaces que se pueden tocar; en el teléfono el campo para escribir reemplaza al menú de abajo. Los mensajes llegan al momento (Supabase Realtime) y con notificación al teléfono.
 
 **Administrador** (panel aparte)
@@ -144,6 +146,7 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 | 5. Lector renovado ✅ | Subrayado en colores, tarjeta para editar, notas al margen, cinta de marcador, fondos Claro/Sepia/Noche, libro abierto en pantallas anchas, gestos, cuaderno con índice, notas y búsqueda en el libro, y biblioteca con «Seguir leyendo». |
 | 6. Interfaz renovada ✅ | Encabezados con el «manto» azul estrellado, menú lateral en computadora, saludo según la hora, ejemplos de la virtud para ir marcando, vista de mes en el calendario, temario como línea de tiempo, preguntas como conversación, panel agrupado (Comunidad · Comunicar · Formación), tamaño de letra ajustable, mejor contraste, botones más grandes y uso con teclado. |
 | 7. Mensajes y deshacer ✅ | Chat privado con el coordinador que cada quien elija (reemplaza las preguntas), con notificaciones y mensajes en vivo. Historial de 30 días para recuperar lo borrado y deshacer cambios del panel, con aviso «Deshacer» justo después de borrar. Los archivos de un libro borrado se guardan esos 30 días y luego se quitan solos. |
+| 8. Perfil y lugares ✅ | «Mi perfil» con teléfono y gustos (con recordatorio en Inicio para quien no lo ha llenado), ficha del miembro con llamar y WhatsApp, búsqueda por gusto, y hora, lugar y enlace de Google Maps en las charlas y los eventos. |
 
 Las notificaciones push en iPhone sólo funcionan si la app está instalada en la pantalla de inicio (iOS 16.4 o posterior).
 
