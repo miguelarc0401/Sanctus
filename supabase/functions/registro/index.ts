@@ -1,6 +1,7 @@
 // Registro público: cualquiera puede pedir su cuenta. Queda «pendiente» hasta que el
 // administrador la apruebe, y mientras tanto no ve nada de la parroquia.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { enviarPush } from '../_shared/push.ts'
 
 // Igual que en src/lib/usuarios.ts y en la migración de la Fase 1.
 const DOMINIO_USUARIOS = 'usuarios.santamaria.invalid'
@@ -78,9 +79,11 @@ Deno.serve(async (req) => {
     return responder({ error: 'Hay demasiadas solicitudes en espera. Avísale a tu coordinador.' }, 429)
   }
 
+  let nombreGrupo: string | null = null
   if (grupoId) {
-    const { data: grupo } = await supabase.from('grupos').select('id').eq('id', grupoId).maybeSingle()
+    const { data: grupo } = await supabase.from('grupos').select('nombre').eq('id', grupoId).maybeSingle()
     if (!grupo) return responder({ error: 'Ese grupo ya no existe. Elige otro.' }, 400)
+    nombreGrupo = grupo.nombre
   }
 
   const { data, error } = await supabase.auth.admin.createUser({
@@ -101,6 +104,25 @@ Deno.serve(async (req) => {
     .from('perfiles')
     .update({ grupo_solicitado: grupoId, nota_registro: nota || null })
     .eq('id', data.user.id)
+
+  // Los coordinadores se enteran al momento en su teléfono. Varias solicitudes seguidas se juntan en una sola
+  // notificación (que vuelve a sonar). Si el aviso falla, la solicitud ya quedó guardada igual.
+  try {
+    const { data: coordinadores } = await supabase.from('perfiles').select('id').eq('es_admin', true).eq('estado', 'aprobado')
+    await enviarPush(
+      supabase,
+      (coordinadores ?? []).map((c) => c.id as string),
+      {
+        titulo: 'Nueva solicitud para entrar',
+        texto: nombreGrupo ? `${nombre} quiere unirse a ${nombreGrupo}.` : `${nombre} quiere unirse.`,
+        url: '/admin/miembros',
+        etiqueta: 'solicitudes',
+        renotificar: true,
+      },
+    )
+  } catch (e) {
+    console.warn('No se pudo avisar de la solicitud', e)
+  }
 
   return responder({ ok: true })
 })

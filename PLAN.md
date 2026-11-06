@@ -150,6 +150,10 @@ Para ocultar el autor de los temas a los miembros se usa una vista sin esa colum
 
 Las notificaciones push en iPhone sólo funcionan si la app está instalada en la pantalla de inicio (iOS 16.4 o posterior).
 
+Notificaciones (ajuste del 2026-11-06): los coordinadores reciben una al llegar una solicitud nueva (desde la función `registro`); todas salen con prioridad alta para que Android no las retrase con el ahorro de batería; y al abrir la app el teléfono vuelve a guardar su dirección en el servidor (si el navegador la cambió, antes dejaban de llegar sin aviso). El envío está en `supabase/functions/_shared/push.ts` y deja en los registros de Supabase cuántas salieron.
+
+¿APK? En Android, «Instalar» desde Chrome ya crea una app de verdad (WebAPK) con sus propias notificaciones. Un APK como el de Liturgicum (Capacitor) correría en el WebView, que no tiene notificaciones web: habría que montar Firebase y un segundo sistema de envío. Si algún día se quiere un APK para repartir por WhatsApp, la opción que conserva estas notificaciones es una TWA (la web dentro de Chrome, con `/.well-known/assetlinks.json` en el sitio).
+
 ## 10. Costos
 
 - **Cloudflare Workers:** gratis y sin créditos; las visitas a la app (archivos estáticos) no se cobran.

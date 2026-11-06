@@ -5,6 +5,7 @@ import { useAuth } from '../auth/contexto'
 import { useGrupos } from '../grupos/contexto'
 import { useEncuestas } from '../lib/participacion'
 import { useMensajesEnVivo } from '../lib/mensajes'
+import { useSincronizarNotificaciones } from '../lib/notificaciones'
 import { useMensajesSinLeer, useSolicitudesPendientes } from '../lib/pendientes'
 import { AvisoDeshacer } from './AvisoDeshacer'
 import { Insignia, SinConexion } from './Bloques'
@@ -80,6 +81,7 @@ export function Layout() {
   const { pathname } = useLocation()
   const { secciones, pendientesAdmin } = useSecciones()
   useMensajesEnVivo()
+  useSincronizarNotificaciones(perfil?.estado === 'aprobado' ? perfil.id : null)
   // Dentro de una conversación, el campo para escribir va abajo en lugar del menú (como en WhatsApp).
   const enConversacion = /^\/mensajes\/[^/]+$/.test(pathname)
 

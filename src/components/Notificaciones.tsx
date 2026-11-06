@@ -1,7 +1,7 @@
 import { Bell, BellOff, BellRing, Share, X } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../auth/contexto'
-import { activarNotificaciones, desactivarNotificaciones, notificar, useNotificaciones } from '../lib/notificaciones'
+import { activarNotificaciones, apagarNotificaciones, notificar, useNotificaciones } from '../lib/notificaciones'
 import { Boton, MensajeError } from './Formulario'
 
 const CLAVE_INVITACION = 'invitacion-notificaciones-oculta'
@@ -132,7 +132,7 @@ export function AjusteNotificaciones() {
                 Enviarme una de prueba
               </Boton>
             )}
-            <Boton variante="secundario" className="flex-1" disabled={trabajando} onClick={() => void hacer(desactivarNotificaciones)}>
+            <Boton variante="secundario" className="flex-1" disabled={trabajando} onClick={() => void hacer(apagarNotificaciones)}>
               <BellOff className="size-4" aria-hidden /> Apagar
             </Boton>
           </div>

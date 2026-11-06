@@ -51,9 +51,19 @@ export async function activarNotificaciones() {
   }
   const reg = await registro()
   if (!reg) throw new Error('Abre la app instalada (o recarga la página) e inténtalo de nuevo.')
-  const suscripcion =
+  await guardar(await suscribir(reg))
+  marcarApagadas(false)
+}
+
+async function suscribir(reg: ServiceWorkerRegistration) {
+  return (
     (await reg.pushManager.getSubscription()) ??
     (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: enBytes(VAPID_PUBLICA) }))
+  )
+}
+
+// El servidor guarda la dirección de este teléfono a nombre de la cuenta con la que se entró.
+async function guardar(suscripcion: PushSubscription) {
   const { endpoint, keys } = suscripcion.toJSON()
   const { error } = await supabase.rpc('guardar_suscripcion', {
     direccion: endpoint,
@@ -63,13 +73,55 @@ export async function activarNotificaciones() {
   if (error) throw error
 }
 
-// Al cerrar sesión o apagarlas: este teléfono deja de recibir notificaciones de la cuenta.
+// Si alguien las apaga a mano, no se vuelven a encender solas al abrir la app.
+const CLAVE_APAGADAS = 'notificaciones-apagadas'
+
+function apagadasAMano() {
+  try {
+    return localStorage.getItem(CLAVE_APAGADAS) === '1'
+  } catch {
+    return false
+  }
+}
+
+function marcarApagadas(apagadas: boolean) {
+  try {
+    if (apagadas) localStorage.setItem(CLAVE_APAGADAS, '1')
+    else localStorage.removeItem(CLAVE_APAGADAS)
+  } catch {
+    // Sin almacenamiento, sólo no se recuerda la preferencia.
+  }
+}
+
+// Al abrir la app: el servidor vuelve a guardar la dirección de este teléfono tal como está hoy. El navegador a
+// veces la cambia o la pierde (al reinstalar la app, al borrar datos, al actualizarse), y entonces las
+// notificaciones dejaban de llegar aunque la app dijera «activadas». Sólo si el permiso ya estaba dado: no
+// pregunta nada.
+async function sincronizar() {
+  if (!hayApoyo() || Notification.permission !== 'granted' || apagadasAMano()) return
+  const reg = await registro()
+  if (reg) await guardar(await suscribir(reg))
+}
+
+export function useSincronizarNotificaciones(cuenta: string | null) {
+  useEffect(() => {
+    if (cuenta) void sincronizar().catch((e) => console.warn('No se pudieron revisar las notificaciones', e))
+  }, [cuenta])
+}
+
+// Al cerrar sesión: este teléfono deja de recibir notificaciones de la cuenta.
 export async function desactivarNotificaciones() {
   if (!hayApoyo()) return
   const suscripcion = await (await registro())?.pushManager.getSubscription()
   if (!suscripcion) return
   await supabase.rpc('borrar_suscripcion', { direccion: suscripcion.endpoint })
   await suscripcion.unsubscribe()
+}
+
+// El botón «Apagar»: además, recuerda que fue a propósito.
+export async function apagarNotificaciones() {
+  await desactivarNotificaciones()
+  marcarApagadas(true)
 }
 
 type Tipo = 'aviso' | 'evento' | 'mensaje' | 'encuesta' | 'prueba'

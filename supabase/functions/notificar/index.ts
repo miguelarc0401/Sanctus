@@ -1,10 +1,7 @@
 // Envía notificaciones al teléfono (Web Push) cuando el administrador publica algo o alguien manda un mensaje.
-// La clave privada VAPID se lee de la bóveda de Supabase; la pública es la misma que usa la app.
+// El envío en sí está en ../_shared/push.ts.
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import webpush from 'npm:web-push@3.6.7'
-
-const VAPID_PUBLICA = 'BHvuU6NEW5QYhEypwEDH4lEjGscSDLbE7_t9Oiwwy3hw6pUF3PwQKUDsl6Y1Liac_1uWFOyFk6-pr_k_YUhT_EQ'
-const SITIO = 'https://sanctus.miguelarc-0401.workers.dev'
+import { enviarPush, type Mensaje } from '../_shared/push.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -28,8 +25,6 @@ function claveSecreta() {
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, claveSecreta(), {
   auth: { persistSession: false, autoRefreshToken: false },
 })
-
-type Mensaje = { titulo: string; texto: string; url: string; etiqueta: string; renotificar?: boolean }
 
 // Cuentas aprobadas de un grupo, o de toda la parroquia si no hay grupo.
 async function cuentasDe(grupoId: number | null) {
@@ -110,33 +105,5 @@ Deno.serve(async (req) => {
 
   // A quien publica no le llega su propio aviso (salvo la notificación de prueba).
   const destinatarios = tipo === 'prueba' ? cuentas : cuentas.filter((c) => c !== sesion.user!.id)
-  if (destinatarios.length === 0) return responder({ enviadas: 0, total: 0 })
-
-  const { data: suscripciones } = await supabase
-    .from('suscripciones_push')
-    .select('id, endpoint, p256dh, auth')
-    .in('usuario_id', destinatarios)
-  if (!suscripciones?.length) return responder({ enviadas: 0, total: 0 })
-
-  const { data: privada } = await supabase.rpc('clave_vapid_privada')
-  webpush.setVapidDetails(SITIO, VAPID_PUBLICA, privada)
-
-  const resultados = await Promise.allSettled(
-    suscripciones.map((s) =>
-      webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(mensaje), {
-        TTL: 60 * 60 * 24,
-      }),
-    ),
-  )
-
-  // Los teléfonos que ya no aceptan notificaciones (app borrada, permiso quitado) se dan de baja.
-  const vencidas = suscripciones.filter((_, i) => {
-    const r = resultados[i]
-    const codigo = r.status === 'rejected' ? (r.reason as { statusCode?: number }).statusCode : undefined
-    return codigo === 404 || codigo === 410
-  })
-  if (vencidas.length > 0) await supabase.from('suscripciones_push').delete().in('id', vencidas.map((s) => s.id))
-
-  const enviadas = resultados.filter((r) => r.status === 'fulfilled').length
-  return responder({ enviadas, total: suscripciones.length })
+  return responder(await enviarPush(supabase, destinatarios, mensaje))
 })
